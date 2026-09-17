@@ -1,0 +1,38 @@
+-- Mesures suggérées pour le modèle Power BI.
+-- À coller une par une dans "Nouvelle mesure" sur la table concernée.
+
+-- === Température (table vw_Temperature) ===
+
+Temperature Moyenne = AVERAGE(vw_Temperature[TemperatureMoyenne])
+
+Temperature Annee Precedente =
+CALCULATE(
+    [Temperature Moyenne],
+    FILTER(ALL(Annee), Annee[ValeurAnnee] = MAX(Annee[ValeurAnnee]) - 1)
+)
+
+Variation Temperature =
+[Temperature Moyenne] - [Temperature Annee Precedente]
+
+
+-- === Précipitations (table vw_Precipitation) ===
+
+Precipitation Totale = SUM(vw_Precipitation[PrecipitationAnnuelle])
+
+Precipitation Moyenne Provinciale = AVERAGE(vw_Precipitation[PrecipitationAnnuelle])
+
+
+-- === Pollution (table vw_Pollution) ===
+-- IMPORTANT : 2025 contient des NULL (données ECCC pas encore publiées).
+-- AVERAGE/SUM ignorent les NULL par défaut, donc pas besoin de filtrer à la main.
+
+Emissions Moyennes = AVERAGE(vw_Pollution[EmissionGES_MtCO2e])
+
+Emissions Totales = SUM(vw_Pollution[EmissionGES_MtCO2e])
+
+Provinces Avec Donnees 2025 =
+CALCULATE(
+    DISTINCTCOUNT(vw_Pollution[CodeProvince]),
+    vw_Pollution[Annee] = 2025,
+    NOT ISBLANK(vw_Pollution[EmissionGES_MtCO2e])
+)
