@@ -1,0 +1,326 @@
+:root {
+  --navy: #07182b;
+  --navy-2: #0c2743;
+  --surface: #f5f8fb;
+  --card: #ffffff;
+
+  --temperature: #ef4444;
+  --temperature-soft: #fff1f1;
+
+  --rain: #2563eb;
+  --rain-soft: #eff6ff;
+
+  --pollution: #16a34a;
+  --pollution-soft: #f0fdf4;
+
+  --purple: #7c3aed;
+
+  --text: #172033;
+  --muted: #667085;
+
+  --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell main {
+  flex: 1;
+}
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+
+.main-navbar {
+  background: linear-gradient(90deg, var(--navy), var(--navy-2));
+  padding: 0.85rem 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.main-navbar .navbar-brand {
+  color: white;
+  font-weight: 800;
+  font-size: 1.35rem;
+}
+
+.main-navbar .nav-link {
+  color: rgba(255, 255, 255, 0.78);
+  margin-left: 0.35rem;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.85rem !important;
+  transition: all 0.2s ease;
+}
+
+.main-navbar .nav-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.main-navbar .nav-link.active {
+  color: white !important;
+  background: rgba(34, 197, 94, 0.16);
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.hero-section {
+  border-radius: 1.5rem;
+  padding: 2.7rem;
+  color: var(--text);
+
+  background: linear-gradient(
+    135deg,
+    rgba(22, 163, 74, 0.12),
+    rgba(37, 99, 235, 0.1)
+  );
+
+  box-shadow: var(--shadow);
+}
+
+.hero-section h1 {
+  letter-spacing: -0.04em;
+}
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.dashboard-card {
+  background: var(--card);
+  border: 0;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-card .card-body {
+  padding: 1.5rem;
+}
+
+.section-card {
+  background: white;
+  border-radius: 1.3rem;
+  border: 0;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.section-header {
+  padding: 1rem 1.3rem;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.section-header.temperature {
+  background: linear-gradient(90deg, #dc2626, #f97316);
+}
+
+.section-header.rain {
+  background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+}
+
+.section-header.pollution {
+  background: linear-gradient(90deg, #15803d, #22c55e);
+}
+
+.section-header.purple {
+  background: linear-gradient(90deg, #6d28d9, #9333ea);
+}
+
+/* =========================================================
+   KPI
+   ========================================================= */
+
+.kpi-card {
+  border: 0;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+  height: 100%;
+  overflow: hidden;
+}
+
+.kpi-card.temperature {
+  background: linear-gradient(135deg, var(--temperature-soft), white);
+}
+
+.kpi-card.rain {
+  background: linear-gradient(135deg, var(--rain-soft), white);
+}
+
+.kpi-card.pollution {
+  background: linear-gradient(135deg, var(--pollution-soft), white);
+}
+
+.kpi-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.55rem;
+  color: white;
+}
+
+.kpi-icon.temperature {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+}
+
+.kpi-icon.rain {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+}
+
+.kpi-icon.pollution {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.kpi-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   PAGE TITLES
+   ========================================================= */
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.page-subtitle {
+  color: var(--muted);
+}
+
+/* =========================================================
+   SELECT
+   ========================================================= */
+
+.dashboard-select {
+  border-radius: 0.8rem;
+  min-height: 44px;
+  border: 1px solid #d0d5dd;
+}
+
+/* =========================================================
+   RESULT CARDS
+   ========================================================= */
+
+.result-item {
+  border-radius: 1rem;
+  padding: 1rem 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.result-hot {
+  background: #fff1f1;
+  border: 1px solid #fecaca;
+}
+
+.result-cold {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.result-green {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.data-table {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.data-table thead th {
+  background: #f4f0ff;
+  color: #312e81;
+  border-bottom: 0;
+  padding: 1rem;
+}
+
+.data-table tbody td {
+  padding: 0.85rem 1rem;
+}
+
+.province-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 44px;
+  padding: 0.3rem 0.65rem;
+
+  border-radius: 999px;
+
+  color: white;
+  font-weight: 700;
+
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.app-footer {
+  margin-top: 3rem;
+  background: var(--navy);
+  color: rgba(255, 255, 255, 0.78);
+  padding: 1.4rem 0;
+}
+
+/*  MOBILE */
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 1.7rem;
+  }
+
+  .page-title {
+    font-size: 1.7rem;
+  }
+
+  .kpi-value {
+    font-size: 1.6rem;
+  }
+}

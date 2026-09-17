@@ -1,0 +1,73 @@
+.canada-map-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canada-map {
+  width: 100%;
+  max-width: 820px;
+  height: auto;
+}
+
+.canada-location {
+  fill: #dbeafe;
+  stroke: #ffffff;
+  stroke-width: 1.2;
+  cursor: pointer;
+  transition:
+    fill 0.2s ease,
+    filter 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.canada-location:hover {
+  fill: #60a5fa;
+  filter:
+    drop-shadow(
+      0 5px 7px rgba(37, 99, 235, 0.25)
+    );
+}
+
+.canada-location-selected {
+  fill: #22c55e !important;
+  filter:
+    drop-shadow(
+      0 6px 9px rgba(34, 197, 94, 0.35)
+    );
+}
+
+.map-selected-label {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+
+  padding: 0.7rem 0.95rem;
+
+  display: flex;
+  flex-direction: column;
+
+  border-radius: 0.9rem;
+
+  background:
+    rgba(255, 255, 255, 0.95);
+
+  border:
+    1px solid #e2e8f0;
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.10);
+}
+
+.map-selected-label span {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.map-selected-label strong {
+  font-size: 1.2rem;
+  color: #15803d;
+}
