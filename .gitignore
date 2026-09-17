@@ -1,0 +1,42 @@
+# Python
+.venv/
+.venv3/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# React / Node
+node_modules/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+
+# Remise officielle du cours (archivée localement, pas sur GitHub)
+Remise_INF4163.zip
+Remise_INF4163_Climate_Canada/
+Test_Remise_INF4163/
+
+# Requêtes SQL Server Management Studio, exploration ad hoc
+SQL_Server/
+
+# Ancienne copie du rapport, remplacée par Rapport/
+/Rapport_final_INF4163_Climate_Canada.docx
+
+# Sortie de débogage générée par ETL/inspect_pollution.py
+pollution_inspection.txt
