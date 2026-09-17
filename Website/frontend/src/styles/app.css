@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --navy: #07182b;
   --navy-2: #0c2743;
   --surface: #f5f8fb;
@@ -44,53 +44,7 @@ body {
     sans-serif;
 }
 
-.app-shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-shell main {
-  flex: 1;
-}
-
-/* =========================================================
-   NAVBAR
-   ========================================================= */
-
-.main-navbar {
-  background: linear-gradient(90deg, var(--navy), var(--navy-2));
-  padding: 0.85rem 0;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-}
-
-.main-navbar .navbar-brand {
-  color: white;
-  font-weight: 800;
-  font-size: 1.35rem;
-}
-
-.main-navbar .nav-link {
-  color: rgba(255, 255, 255, 0.78);
-  margin-left: 0.35rem;
-  border-radius: 0.7rem;
-  padding: 0.6rem 0.85rem !important;
-  transition: all 0.2s ease;
-}
-
-.main-navbar .nav-link:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.main-navbar .nav-link.active {
-  color: white !important;
-  background: rgba(34, 197, 94, 0.16);
-}
-
-/* =========================================================
-   HERO
-   ========================================================= */
+/* hero */
 
 .hero-section {
   border-radius: 1.5rem;
@@ -110,9 +64,7 @@ body {
   letter-spacing: -0.04em;
 }
 
-/* =========================================================
-   CARDS
-   ========================================================= */
+/* cards */
 
 .dashboard-card {
   background: var(--card);
@@ -156,9 +108,7 @@ body {
   background: linear-gradient(90deg, #6d28d9, #9333ea);
 }
 
-/* =========================================================
-   KPI
-   ========================================================= */
+/* KPI */
 
 .kpi-card {
   border: 0;
@@ -213,9 +163,7 @@ body {
   font-size: 0.9rem;
 }
 
-/* =========================================================
-   PAGE TITLES
-   ========================================================= */
+/* page titles */
 
 .page-title {
   font-size: 2rem;
@@ -227,9 +175,7 @@ body {
   color: var(--muted);
 }
 
-/* =========================================================
-   SELECT
-   ========================================================= */
+/* select */
 
 .dashboard-select {
   border-radius: 0.8rem;
@@ -237,9 +183,7 @@ body {
   border: 1px solid #d0d5dd;
 }
 
-/* =========================================================
-   RESULT CARDS
-   ========================================================= */
+/* result cards */
 
 .result-item {
   border-radius: 1rem;
@@ -262,9 +206,7 @@ body {
   border: 1px solid #bbf7d0;
 }
 
-/* =========================================================
-   TABLE
-   ========================================================= */
+/* table */
 
 .data-table {
   border-radius: 1rem;
@@ -298,9 +240,7 @@ body {
   background: linear-gradient(90deg, #2563eb, #7c3aed);
 }
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
+/* footer */
 
 .app-footer {
   margin-top: 3rem;
@@ -309,7 +249,7 @@ body {
   padding: 1.4rem 0;
 }
 
-/*  MOBILE */
+/* mobile */
 
 @media (max-width: 768px) {
   .hero-section {

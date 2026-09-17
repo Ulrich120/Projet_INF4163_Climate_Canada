@@ -16,10 +16,7 @@ const NAME_TO_CODE = {
   Yukon: "YT",
 };
 
-function CanadaMap({
-  selectedProvince,
-  onProvinceChange,
-}) {
+function CanadaMap({ selectedProvince, onProvinceChange }) {
   return (
     <div className="canada-map-wrapper">
       <svg
@@ -29,11 +26,8 @@ function CanadaMap({
         aria-label="Carte interactive du Canada"
       >
         {Canada.locations.map((location) => {
-          const code =
-            NAME_TO_CODE[location.name];
-
-          const isSelected =
-            code === selectedProvince;
+          const code = NAME_TO_CODE[location.name];
+          const isSelected = code === selectedProvince;
 
           return (
             <path
@@ -42,32 +36,21 @@ function CanadaMap({
               name={location.name}
               d={location.path}
               className={
-                isSelected
-                  ? "canada-location canada-location-selected"
-                  : "canada-location"
+                isSelected ? "canada-location canada-location-selected" : "canada-location"
               }
               onClick={() => {
-                if (code) {
-                  onProvinceChange(code);
-                }
+                if (code) onProvinceChange(code);
               }}
             >
-              <title>
-                {location.name}
-              </title>
+              <title>{location.name}</title>
             </path>
           );
         })}
       </svg>
 
       <div className="map-selected-label">
-        <span>
-          Province sélectionnée
-        </span>
-
-        <strong>
-          {selectedProvince}
-        </strong>
+        <span>Province sélectionnée</span>
+        <strong>{selectedProvince}</strong>
       </div>
     </div>
   );
