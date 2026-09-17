@@ -102,9 +102,7 @@ function Results() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* ====================================================
-          TEMPERATURE
-          ==================================================== */}
+      {/* Température */}
 
       <div className="section-card mb-4">
         <div className="section-header temperature">
@@ -169,9 +167,7 @@ function Results() {
         </div>
       </div>
 
-      {/* ====================================================
-          PRECIPITATION
-          ==================================================== */}
+      {/* Précipitations */}
 
       <div className="section-card mb-4">
         <div className="section-header rain">
@@ -238,9 +234,7 @@ function Results() {
         </div>
       </div>
 
-      {/* ====================================================
-          POLLUTION
-          ==================================================== */}
+      {/* Pollution */}
 
       <div className="section-card">
         <div className="section-header pollution">
