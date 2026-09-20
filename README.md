@@ -1,5 +1,7 @@
 # Climate Canada Dashboard
 
+[![CI](https://github.com/Ulrich120/Projet_INF4163_Climate_Canada/actions/workflows/ci.yml/badge.svg)](https://github.com/Ulrich120/Projet_INF4163_Climate_Canada/actions/workflows/ci.yml)
+
 Projet réalisé pour le cours **INF4163 — Techniques de bases de données** à l'UQO. L'idée de départ : prendre des données climatiques publiques du Canada (température, précipitations, émissions de GES) et construire une petite application complète autour — base de données, API, interface web, et maintenant un tableau de bord Power BI.
 
 Le but n'était pas juste de "faire joli" avec des graphiques, mais de manipuler un vrai pipeline de données : aller chercher les fichiers bruts, les nettoyer, les charger dans SQL Server, écrire des procédures stockées pour en tirer des analyses, puis exposer tout ça via une API et un frontend.
@@ -117,7 +119,7 @@ cd Projet_INF4163_Climate_Canada
 
 ### 2. Mettre en place SQL Server
 
-Exécuter les scripts de `Database/` (création des bases, puis `Database/Procedures/` et `Database/Triggers/`). Le nom du serveur utilisé par le backend (`Website/backend/app/database.py`) doit correspondre à ton instance locale — un `SELECT @@SERVERNAME;` dans SSMS te donne la bonne valeur si ce n'est pas déjà le cas.
+Exécuter les scripts de `Database/` (création des bases, puis `Database/Procedures/` et `Database/Triggers/`). Le backend lit l'adresse du serveur dans un fichier `.env` : copie `Website/backend/.env.example` vers `Website/backend/.env` et mets le nom de ton instance (un `SELECT @@SERVERNAME;` dans SSMS te donne la bonne valeur).
 
 ### 3. Lancer le backend
 
@@ -144,6 +146,16 @@ npm run dev
 Vite indique l'adresse locale, en général `http://localhost:5173`.
 
 Le backend doit être démarré avant (ou pendant) l'utilisation du frontend — sans lui, les pages restent vides.
+
+### 5. Tests et qualité du code
+
+```powershell
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
+
+Les tests couvrent la logique de nettoyage/agrégation de l'ETL et les routes de l'API (base de données simulée, pas besoin de SQL Server). La même vérification tourne sur GitHub Actions à chaque push, avec un lint + build du frontend.
 
 ## Équipe
 

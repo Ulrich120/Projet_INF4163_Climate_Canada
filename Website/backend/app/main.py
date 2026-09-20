@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import get_connection
+from .database import get_connection
 
 app = FastAPI(
     title="Climate Canada API",

@@ -1,8 +1,12 @@
-import pyodbc
+import os
 
-# à adapter au nom de ton instance locale (SELECT @@SERVERNAME; dans SSMS)
-SERVER = r"Ulrich\SQLEXPRESS"
-DRIVER = "ODBC Driver 18 for SQL Server"
+import pyodbc
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SERVER = os.getenv("SQL_SERVER", r"localhost\SQLEXPRESS")
+DRIVER = os.getenv("SQL_DRIVER", "ODBC Driver 18 for SQL Server")
 
 DATABASES = {
     "temperature": "TemperatureDB",
