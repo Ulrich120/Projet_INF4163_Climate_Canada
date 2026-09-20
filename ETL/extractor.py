@@ -1,6 +1,5 @@
 import pandas as pd
-
-from config import TEMPERATURE_RAW_DIR, TEMPERATURE_FILE_PATTERN
+from config import TEMPERATURE_FILE_PATTERN, TEMPERATURE_RAW_DIR
 
 
 def list_temperature_files():

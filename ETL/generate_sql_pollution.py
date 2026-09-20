@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pandas as pd
 
 INPUT_CSV = Path("Data/Processed/Pollution/pollution_annual.csv")

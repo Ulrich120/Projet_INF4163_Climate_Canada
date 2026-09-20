@@ -1,8 +1,5 @@
-from pathlib import Path
-
 import pandas as pd
-
-from config import TEMPERATURE_RAW_DIR, PROCESSED_DIR
+from config import PROCESSED_DIR, TEMPERATURE_RAW_DIR
 from extractor import read_temperature_file
 from transformer import calculate_monthly_province_summary
 from utils import parse_climate_filename

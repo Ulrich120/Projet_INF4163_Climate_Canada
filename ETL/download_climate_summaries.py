@@ -1,5 +1,6 @@
 import os
 import time
+
 import requests
 
 OUTPUT_FOLDER = "Data/Raw/Temperature"

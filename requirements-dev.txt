@@ -1,0 +1,5 @@
+-r ETL/requirements.txt
+-r Website/backend/requirements.txt
+pytest
+ruff
+httpx
