@@ -1,0 +1,6 @@
+line-length = 110
+extend-exclude = ["Website/frontend", ".venv3", "Data"]
+
+[lint]
+# except Exception est voulu aux frontieres (API -> 500, telechargements -> on continue)
+ignore = ["BLE001", "ISC004"]

@@ -1,6 +1,4 @@
-from pathlib import Path
 import pandas as pd
-
 from config import PROCESSED_DIR, SQL_DIR
 
 INPUT_FILE = PROCESSED_DIR / "Temperature" / "temperature_annual.csv"
