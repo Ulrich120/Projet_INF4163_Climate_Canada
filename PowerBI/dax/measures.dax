@@ -23,16 +23,21 @@ Precipitation Moyenne Provinciale = AVERAGE(vw_Precipitation[PrecipitationAnnuel
 
 
 -- === Pollution (table vw_Pollution) ===
--- IMPORTANT : 2025 contient des NULL (données ECCC pas encore publiées).
+-- IMPORTANT : les dernières années contiennent des NULL (données ECCC pas encore publiées).
 -- AVERAGE/SUM ignorent les NULL par défaut, donc pas besoin de filtrer à la main.
 
 Emissions Moyennes = AVERAGE(vw_Pollution[EmissionGES_MtCO2e])
 
 Emissions Totales = SUM(vw_Pollution[EmissionGES_MtCO2e])
 
-Provinces Avec Donnees 2025 =
+Derniere Annee Publiee =
+CALCULATE(
+    MAX(vw_Pollution[Annee]),
+    NOT ISBLANK(vw_Pollution[EmissionGES_MtCO2e])
+)
+
+Provinces Sans Donnees =
 CALCULATE(
     DISTINCTCOUNT(vw_Pollution[CodeProvince]),
-    vw_Pollution[Annee] = 2025,
-    NOT ISBLANK(vw_Pollution[EmissionGES_MtCO2e])
+    ISBLANK(vw_Pollution[EmissionGES_MtCO2e])
 )

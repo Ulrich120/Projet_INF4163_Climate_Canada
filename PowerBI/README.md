@@ -28,7 +28,7 @@ Répète l'opération pour les trois bases (Power BI permet d'avoir plusieurs so
 
 ## 3. Construire un schéma en étoile
 
-Les tables `Province` et `Annee` existent dans les trois bases avec exactement les mêmes identifiants (1 à 13 pour les provinces, 1 à 3 pour les années — voir `ETL/generate_sql_*.py`). Ça permet de n'en importer **qu'une seule copie** et de la partager entre les trois faits :
+Les tables `Province` et `Annee` existent dans les trois bases avec exactement les mêmes identifiants (1 à 13 pour les provinces, 1 à 26 pour les années 2000-2025 — les scripts de `Database/` les remplissent toujours dans le même ordre, voir `ETL/reference.py`). Ça permet de n'en importer **qu'une seule copie** et de la partager entre les trois faits :
 
 - Importer `Province` et `Annee` depuis `TemperatureDB` seulement
 - Dans la vue **Modèle**, créer les relations :
@@ -46,7 +46,7 @@ Ouvre `dax/measures.dax` et recrée chaque mesure listée (clic droit sur la tab
 Suggestions de base pour un premier rapport :
 
 - Carte du Canada colorée par province (température moyenne, précipitations ou émissions selon la page)
-- Courbe d'évolution 2023-2025 par province sélectionnée (slicer sur `Province[CodeProvince]`)
+- Courbe d'évolution 2000-2025 par province sélectionnée (slicer sur `Province[CodeProvince]`)
 - Graphique en barres pour comparer les 13 provinces sur une année donnée
 - Cartes KPI utilisant les mesures `Temperature Moyenne`, `Precipitation Totale`, `Emissions Moyennes`
 
