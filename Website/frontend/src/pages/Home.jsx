@@ -12,6 +12,7 @@ import { Line } from "react-chartjs-2";
 
 import api from "../api/api";
 import CanadaMap from "../components/map/CanadaMap";
+import { lastWithData, toNumber } from "../utils/series";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
@@ -73,17 +74,11 @@ function Home() {
 
   const provinceName = temperatureProvince[0]?.nomProvince || selectedProvince;
 
-  const getYearValue = (dataset, year, key) => {
-    const row = dataset.find((item) => item.annee === year);
-    if (!row || row[key] === null || row[key] === undefined) return null;
-    return Number(row[key]);
-  };
+  const latestTemperature = lastWithData(temperatureProvince, "temperature");
+  const latestPrecipitation = lastWithData(precipitationProvince, "precipitation");
+  const latestPollution = lastWithData(pollutionProvince, "emission");
 
-  const latestTemperature = getYearValue(temperatureProvince, 2025, "temperature");
-  const latestPrecipitation = getYearValue(precipitationProvince, 2025, "precipitation");
-  const latestPollution = getYearValue(pollutionProvince, 2024, "emission");
-
-  const temperatureTrend = temperatureProvince.map((item) => Number(item.temperature));
+  const temperatureTrend = temperatureProvince.map((item) => toNumber(item.temperature));
 
   const chartData = {
     labels: temperatureProvince.map((item) => item.annee),
@@ -158,11 +153,11 @@ function Home() {
           <DashboardKPI
             icon="bi-thermometer-high"
             label="Température"
-            value={latestTemperature !== null ? latestTemperature.toFixed(2) : "--"}
+            value={latestTemperature ? latestTemperature.value.toFixed(2) : "--"}
             unit="°C"
             color="#dc2626"
             background="#fff1f2"
-            note="2025"
+            note={latestTemperature ? String(latestTemperature.annee) : ""}
           />
         </div>
 
@@ -170,11 +165,11 @@ function Home() {
           <DashboardKPI
             icon="bi-cloud-rain-heavy"
             label="Précipitations"
-            value={latestPrecipitation !== null ? latestPrecipitation.toFixed(2) : "--"}
+            value={latestPrecipitation ? latestPrecipitation.value.toFixed(2) : "--"}
             unit="mm"
             color="#0284c7"
             background="#eff6ff"
-            note="2025"
+            note={latestPrecipitation ? String(latestPrecipitation.annee) : ""}
           />
         </div>
 
@@ -182,11 +177,11 @@ function Home() {
           <DashboardKPI
             icon="bi-cloud-haze2-fill"
             label="Émissions GES"
-            value={latestPollution !== null ? latestPollution.toFixed(2) : "--"}
+            value={latestPollution ? latestPollution.value.toFixed(2) : "--"}
             unit="Mt"
             color="#15803d"
             background="#f0fdf4"
-            note="Dernière donnée officielle : 2024"
+            note={latestPollution ? `Dernière donnée officielle : ${latestPollution.annee}` : ""}
           />
         </div>
 
@@ -243,7 +238,7 @@ function Home() {
           <QuickModule
             icon="bi-thermometer-high"
             title="Température"
-            text="Analyse des températures annuelles moyennes de 2023 à 2025."
+            text="Analyse des températures annuelles moyennes, année par année."
             href="/temperature"
             color="#dc2626"
           />

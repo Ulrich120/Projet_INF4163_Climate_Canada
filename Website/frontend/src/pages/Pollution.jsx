@@ -13,6 +13,14 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import {
+  firstWithData,
+  lastWithData,
+  nationalAverages,
+  round2,
+  toNumber,
+  yearsIn,
+} from "../utils/series";
 
 ChartJS.register(
   CategoryScale,
@@ -65,58 +73,34 @@ function Pollution() {
 
   const selectedProvinceName = provinceData[0]?.nomProvince || selectedProvince;
 
-  const getValue = (year) => {
-    const row = provinceData.find((item) => item.annee === year);
+  const years = useMemo(() => yearsIn(data), [data]);
+  const periodLabel = years.length ? `${years[0]} à ${years[years.length - 1]}` : "";
+  const maxYear = years[years.length - 1];
 
-    if (!row || row.emission === null || row.emission === undefined) {
-      return null;
-    }
+  // dernière année pour laquelle ECCC a publié au moins une valeur provinciale
+  const lastOfficialYear = useMemo(() => {
+    const published = data.filter((item) => toNumber(item.emission) !== null);
+    return published.length ? Math.max(...published.map((item) => item.annee)) : null;
+  }, [data]);
+  const hasUnpublishedYears = lastOfficialYear !== null && lastOfficialYear < maxYear;
 
-    return Number(row.emission);
-  };
-
-  const emission2023 = getValue(2023);
-  const emission2024 = getValue(2024);
-  const emission2025 = getValue(2025);
+  const first = firstWithData(provinceData, "emission");
+  const latest = lastWithData(provinceData, "emission");
+  const atMaxYear = toNumber(provinceData.find((item) => item.annee === maxYear)?.emission);
 
   const variation =
-    emission2023 !== null && emission2024 !== null
-      ? (emission2024 - emission2023).toFixed(2)
+    first && latest && first.annee !== latest.annee
+      ? (latest.value - first.value).toFixed(2)
       : "--";
 
-  const annualAverages = useMemo(() => {
-    return [2023, 2024, 2025].map((year) => {
-      const values = data
-        .filter((item) => item.annee === year)
-        .map((item) => item.emission)
-        .filter(
-          (value) =>
-            value !== null &&
-            value !== undefined &&
-            !Number.isNaN(Number(value)),
-        )
-        .map(Number);
-
-      const average =
-        values.length > 0
-          ? values.reduce((sum, value) => sum + value, 0) / values.length
-          : null;
-
-      return {
-        year,
-        average,
-      };
-    });
-  }, [data]);
+  const annualAverages = useMemo(() => nationalAverages(data, "emission"), [data]);
 
   const lineChartData = {
     labels: provinceData.map((item) => item.annee),
     datasets: [
       {
         label: `Émissions GES — ${selectedProvince}`,
-        data: provinceData.map((item) =>
-          item.emission === null ? null : Number(item.emission),
-        ),
+        data: provinceData.map((item) => toNumber(item.emission)),
         borderColor: "#16a34a",
         backgroundColor: "rgba(34,197,94,0.16)",
         pointBackgroundColor: "#ffffff",
@@ -136,15 +120,9 @@ function Pollution() {
     datasets: [
       {
         label: "Émissions moyennes nationales",
-        data: annualAverages.map((item) =>
-          item.average !== null ? Number(item.average.toFixed(2)) : null,
-        ),
-        backgroundColor: [
-          "rgba(34,197,94,0.62)",
-          "rgba(22,163,74,0.78)",
-          "rgba(148,163,184,0.45)",
-        ],
-        borderRadius: 8,
+        data: annualAverages.map((item) => round2(item.average)),
+        backgroundColor: "rgba(22,163,74,0.72)",
+        borderRadius: 6,
       },
     ],
   };
@@ -228,7 +206,7 @@ function Pollution() {
           </h1>
 
           <p className="page-subtitle mb-0">
-            Émissions annuelles de gaz à effet de serre en Mt CO₂e — 2023 à 2025
+            Émissions annuelles de gaz à effet de serre en Mt CO₂e — {periodLabel}
           </p>
         </div>
 
@@ -253,11 +231,14 @@ function Pollution() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="alert alert-warning shadow-sm border-0">
-        <i className="bi bi-info-circle-fill me-2"></i>
-        Les données officielles provinciales de GES pour 2025 ne sont pas encore
-        disponibles. Elles sont affichées comme non disponibles.
-      </div>
+      {hasUnpublishedYears && (
+        <div className="alert alert-warning shadow-sm border-0">
+          <i className="bi bi-info-circle-fill me-2"></i>
+          Les données officielles provinciales de GES après {lastOfficialYear} ne
+          sont pas encore disponibles. Elles sont affichées comme non
+          disponibles.
+        </div>
+      )}
 
       <div className="row g-4 mb-4">
         <div className="col-md-4">
@@ -269,14 +250,16 @@ function Pollution() {
                 </div>
 
                 <div>
-                  <div className="fw-semibold text-success">Émissions 2024</div>
+                  <div className="fw-semibold text-success">
+                    Émissions {latest?.annee ?? ""}
+                  </div>
 
                   <div className="small text-muted">
                     {selectedProvince} - {selectedProvinceName}
                   </div>
 
                   <div className="kpi-value mt-2 text-success">
-                    {emission2024?.toFixed(2) ?? "--"} Mt
+                    {latest?.value.toFixed(2) ?? "--"} Mt
                   </div>
 
                   <div className="small text-muted mt-1">Mt CO₂e</div>
@@ -296,7 +279,7 @@ function Pollution() {
 
                 <div>
                   <div className="fw-semibold text-primary">
-                    Variation 2023 → 2024
+                    Variation {first?.annee ?? ""} → {latest?.annee ?? ""}
                   </div>
 
                   <div className="small text-muted">
@@ -331,7 +314,7 @@ function Pollution() {
 
                 <div>
                   <div className="fw-semibold text-secondary">
-                    Émissions 2025
+                    Émissions {maxYear}
                   </div>
 
                   <div className="small text-muted">
@@ -339,13 +322,13 @@ function Pollution() {
                   </div>
 
                   <div className="kpi-value mt-2 text-secondary">
-                    {emission2025 === null
+                    {atMaxYear === null
                       ? "N/D"
-                      : `${emission2025.toFixed(2)} Mt`}
+                      : `${atMaxYear.toFixed(2)} Mt`}
                   </div>
 
                   <div className="small text-muted mt-1">
-                    Donnée officielle non publiée
+                    {atMaxYear === null ? "Donnée officielle non publiée" : "Mt CO₂e"}
                   </div>
                 </div>
               </div>
@@ -503,7 +486,7 @@ function Pollution() {
             </thead>
 
             <tbody>
-              {data.map((item, index) => (
+              {provinceData.map((item, index) => (
                 <tr key={`${item.province}-${item.annee}-${index}`}>
                   <td>
                     <span className="province-badge">{item.province}</span>
@@ -514,7 +497,7 @@ function Pollution() {
                   <td className="fw-semibold">{item.annee}</td>
 
                   <td>
-                    {item.emission === null ? (
+                    {toNumber(item.emission) === null ? (
                       <span className="badge text-bg-secondary">
                         Non disponible
                       </span>

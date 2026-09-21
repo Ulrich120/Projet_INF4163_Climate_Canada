@@ -303,9 +303,9 @@ function Results() {
 
           <div className="alert alert-warning border-0 mt-4 mb-0">
             <i className="bi bi-info-circle-fill me-2"></i>
-            Les résultats de pollution pour 2025 ne sont pas inclus dans les
-            moyennes, puisque les données officielles provinciales ne sont pas
-            encore publiées.
+            Les années sans donnée officielle de GES ne sont pas incluses dans
+            les moyennes, puisque les données provinciales correspondantes ne
+            sont pas encore publiées.
           </div>
         </div>
       </div>

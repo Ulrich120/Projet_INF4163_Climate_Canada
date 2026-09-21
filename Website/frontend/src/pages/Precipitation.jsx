@@ -13,6 +13,15 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import {
+  firstWithData,
+  lastWithData,
+  mean,
+  nationalAverages,
+  round2,
+  toNumber,
+  yearsIn,
+} from "../utils/series";
 
 ChartJS.register(
   CategoryScale,
@@ -66,43 +75,27 @@ function Precipitation() {
   const selectedProvinceName =
     provinceData[0]?.nomProvince || selectedProvince;
 
-  const getValue = (year) => {
-    const row = provinceData.find((item) => item.annee === year);
-    return row ? Number(row.precipitation) : null;
-  };
+  const years = useMemo(() => yearsIn(data), [data]);
+  const periodLabel = years.length ? `${years[0]} à ${years[years.length - 1]}` : "";
 
-  const precip2023 = getValue(2023);
-  const precip2024 = getValue(2024);
-  const precip2025 = getValue(2025);
+  const first = firstWithData(provinceData, "precipitation");
+  const latest = lastWithData(provinceData, "precipitation");
+  const periodAverage = mean(provinceData.map((item) => toNumber(item.precipitation)));
 
   const variation =
-    precip2023 !== null && precip2025 !== null
-      ? (precip2025 - precip2023).toFixed(2)
+    first && latest && first.annee !== latest.annee
+      ? (latest.value - first.value).toFixed(2)
       : "--";
 
-  const annualAverages = useMemo(() => {
-    return [2023, 2024, 2025].map((year) => {
-      const values = data
-        .filter((item) => item.annee === year)
-        .map((item) => Number(item.precipitation))
-        .filter((value) => !Number.isNaN(value));
-
-      const average =
-        values.length > 0
-          ? values.reduce((sum, value) => sum + value, 0) /
-            values.length
-          : null;
-
-      return { year, average };
-    });
-  }, [data]);
+  const annualAverages = useMemo(() => nationalAverages(data, "precipitation"), [data]);
 
   const lineChartData = {
     labels: provinceData.map((item) => item.annee),
     datasets: [
       {
         label: `Précipitations — ${selectedProvince}`,
-        data: provinceData.map((item) => Number(item.precipitation)),
+        data: provinceData.map((item) => toNumber(item.precipitation)),
+        spanGaps: false,
         borderColor: "#0ea5e9",
         backgroundColor: "rgba(14, 165, 233, 0.16)",
         pointBackgroundColor: "#ffffff",
@@ -121,17 +114,9 @@ function Precipitation() {
     datasets: [
       {
         label: "Précipitations moyennes nationales",
-        data: annualAverages.map((item) =>
-          item.average !== null
-            ? Number(item.average.toFixed(2))
-            : null
-        ),
-        backgroundColor: [
-          "rgba(59,130,246,0.60)",
-          "rgba(14,165,233,0.72)",
-          "rgba(2,132,199,0.82)",
-        ],
-        borderRadius: 8,
+        data: annualAverages.map((item) => round2(item.average)),
+        backgroundColor: "rgba(14,165,233,0.72)",
+        borderRadius: 6,
       },
     ],
   };
@@ -204,8 +189,8 @@ function Precipitation() {
           </h1>
 
           <p className="page-subtitle mb-0">
-            Précipitations annuelles moyennes par province et territoire —
-            2023 à 2025
+            Précipitations annuelles moyennes par province et territoire —{" "}
+            {periodLabel}
           </p>
         </div>
 
@@ -246,7 +231,7 @@ function Precipitation() {
 
                 <div>
                   <div className="fw-semibold text-primary">
-                    Précipitations 2025
+                    Précipitations {latest?.annee ?? ""}
                   </div>
 
                   <div className="small text-muted">
@@ -254,7 +239,7 @@ function Precipitation() {
                   </div>
 
                   <div className="kpi-value mt-2 text-primary">
-                    {precip2025?.toFixed(2) ?? "--"} mm
+                    {latest?.value.toFixed(2) ?? "--"} mm
                   </div>
 
                   <div className="small text-muted mt-1">
@@ -282,7 +267,7 @@ function Precipitation() {
 
                 <div>
                   <div className="fw-semibold text-info">
-                    Précipitations 2024
+                    Moyenne {periodLabel.replace(" à ", "–")}
                   </div>
 
                   <div className="small text-muted">
@@ -290,7 +275,7 @@ function Precipitation() {
                   </div>
 
                   <div className="kpi-value mt-2 text-info">
-                    {precip2024?.toFixed(2) ?? "--"} mm
+                    {periodAverage?.toFixed(2) ?? "--"} mm
                   </div>
 
                   <div className="small text-muted mt-1">
@@ -312,7 +297,7 @@ function Precipitation() {
 
                 <div>
                   <div className="fw-semibold text-success">
-                    Variation 2023 → 2025
+                    Variation {first?.annee ?? ""} → {latest?.annee ?? ""}
                   </div>
 
                   <div className="small text-muted">
@@ -495,7 +480,7 @@ function Precipitation() {
             </thead>
 
             <tbody>
-              {data.map((item, index) => (
+              {provinceData.map((item, index) => (
                 <tr
                   key={`${item.province}-${item.annee}-${index}`}
                 >
@@ -512,7 +497,13 @@ function Precipitation() {
                   </td>
 
                   <td className="fw-semibold text-primary">
-                    {item.precipitation} mm
+                    {toNumber(item.precipitation) === null ? (
+                      <span className="badge text-bg-secondary">
+                        Série incomplète
+                      </span>
+                    ) : (
+                      `${item.precipitation} mm`
+                    )}
                   </td>
                 </tr>
               ))}
