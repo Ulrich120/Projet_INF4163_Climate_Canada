@@ -8,7 +8,7 @@ Le but n'était pas juste de "faire joli" avec des graphiques, mais de manipuler
 
 ## Ce que ça fait
 
-L'application permet d'explorer, province par province, l'évolution de trois choses entre 2023 et 2025 :
+L'application permet d'explorer, province par province, l'évolution de trois choses entre 2000 et 2025 :
 
 - la **température** moyenne annuelle,
 - les **précipitations** cumulées,
@@ -16,7 +16,9 @@ L'application permet d'explorer, province par province, l'évolution de trois ch
 
 Pour chaque thème, il y a des graphiques, une carte du Canada, et une page "résultats" qui affiche ce que sortent nos procédures stockées (année/province la plus chaude, la plus pluvieuse, etc.).
 
-> Petite note honnête sur les données : les chiffres officiels de GES par province pour 2025 n'étaient pas encore publiés au moment du projet. On a préféré laisser ces cellules à `NULL` plutôt que d'extrapoler un chiffre inventé — ça reste visible dans les moyennes calculées.
+> Petite note honnête sur les données : les chiffres officiels de GES par province pour 2025 ne sont pas encore publiés. Ces cellules restent à `NULL` plutôt que d'être extrapolées. Même logique pour la température et les précipitations : une année n'est calculée que si les 12 mois sont disponibles, sinon la valeur reste vide (voir [`Data/README.md`](Data/README.md) pour la méthode et ses limites).
+
+*La version d'origine du projet (2023-2025, telle que remise pour le cours) est conservée sur le tag `v1-remise-inf4163`.*
 
 ## Architecture
 
@@ -51,7 +53,7 @@ On a choisi de séparer les trois thèmes en bases distinctes plutôt que de tou
 
 **PrecipitationDB** — précipitations cumulées, même logique de granularité mensuelle → annuelle.
 
-**PollutionDB** — émissions de GES en Mt CO₂e, avec les valeurs 2025 à `NULL` pour les raisons expliquées plus haut.
+**PollutionDB** — émissions de GES en Mt CO₂e, avec les années non publiées à `NULL` pour les raisons expliquées plus haut.
 
 Chaque base a ses propres procédures stockées (`Database/Procedures/`) pour sortir l'année/la province la plus ou la moins extrême, et des déclencheurs (`Database/Triggers/`) qui bloquent l'insertion de valeurs aberrantes (température hors de -100/70 °C, précipitation négative, émission négative).
 
@@ -74,7 +76,7 @@ C'est volontairement découpé en petits scripts plutôt qu'un seul gros program
 
 ## Power BI
 
-En plus du dashboard React, il y a maintenant un classeur Power BI (`PowerBI/`) branché directement sur les trois bases SQL Server, pour une analyse plus libre que ce que permet l'interface web (croisements, filtres dynamiques, export). Voir [`PowerBI/README.md`](PowerBI/README.md) pour la marche à suivre — en résumé, Power BI Desktop se connecte en direct aux bases via le même driver ODBC que le backend.
+En plus du dashboard React, `PowerBI/` explique comment brancher un rapport Power BI directement sur les trois bases SQL Server, pour une analyse plus libre que ce que permet l'interface web (croisements, filtres dynamiques, export). Voir [`PowerBI/README.md`](PowerBI/README.md) pour la marche à suivre — en résumé, Power BI Desktop se connecte en direct aux bases via le même driver ODBC que le backend.
 
 ## Stack technique
 
@@ -93,10 +95,11 @@ En plus du dashboard React, il y a maintenant un classeur Power BI (`PowerBI/`) 
 
 ```
 Projet_INF4163/
-├── Data/                 données brutes, intermédiaires et scripts SQL générés
-├── Database/             création des bases, procédures stockées, déclencheurs
+├── Data/                 données brutes (GES) et agrégats annuels (CSV)
+├── Database/             création des bases, données, procédures, déclencheurs, vues, setup.ps1
+├── tests/                tests pytest (ETL et API)
 ├── ETL/                  scripts Python du pipeline
-├── PowerBI/              classeur .pbix + guide de connexion
+├── PowerBI/              guide de connexion et mesures DAX
 ├── Website/
 │   ├── backend/          API FastAPI
 │   └── frontend/         application React
@@ -119,9 +122,30 @@ cd Projet_INF4163_Climate_Canada
 
 ### 2. Mettre en place SQL Server
 
-Exécuter les scripts de `Database/` (création des bases, puis `Database/Procedures/` et `Database/Triggers/`). Le backend lit l'adresse du serveur dans un fichier `.env` : copie `Website/backend/.env.example` vers `Website/backend/.env` et mets le nom de ton instance (un `SELECT @@SERVERNAME;` dans SSMS te donne la bonne valeur).
+Un seul script crée les trois bases, charge les données et installe procédures, déclencheurs et vues :
 
-### 3. Lancer le backend
+```powershell
+.\Database\setup.ps1 -Server ".\SQLEXPRESS"          # ajoute -Reset pour repartir de zéro
+```
+
+Le backend lit l'adresse du serveur dans un fichier `.env` : copie `Website/backend/.env.example` vers `Website/backend/.env` et mets le nom de ton instance (un `SELECT @@SERVERNAME;` dans SSMS te donne la bonne valeur).
+
+### 3. Régénérer les données (optionnel)
+
+Les CSV annuels et les scripts SQL sont déjà versionnés. Pour tout recalculer depuis les sources ECCC (~4 000 petits fichiers, une heure environ) :
+
+```powershell
+pip install -r ETL/requirements.txt
+python ETL/download_climate_summaries.py    # reprend là où il s'est arrêté si interrompu
+python ETL/aggregate_temperature.py
+python ETL/aggregate_precipitation.py
+python ETL/aggregate_pollution.py
+python ETL/generate_sql.py                   # réécrit Database/*/02_insert_*.sql
+```
+
+La période se règle dans `ETL/config.py` (`START_YEAR`, `END_YEAR`).
+
+### 4. Lancer le backend
 
 ```powershell
 python -m venv .venv3
@@ -133,7 +157,7 @@ python -m uvicorn app.main:app --reload
 
 L'API tourne sur `http://127.0.0.1:8000` (doc interactive sur `/docs`).
 
-### 4. Lancer le frontend
+### 5. Lancer le frontend
 
 Dans un autre terminal :
 
@@ -147,7 +171,7 @@ Vite indique l'adresse locale, en général `http://localhost:5173`.
 
 Le backend doit être démarré avant (ou pendant) l'utilisation du frontend — sans lui, les pages restent vides.
 
-### 5. Tests et qualité du code
+### 6. Tests et qualité du code
 
 ```powershell
 pip install -r requirements-dev.txt
