@@ -1,6 +1,7 @@
 import pandas as pd
-from config import PROCESSED_DIR, TEMPERATURE_RAW_DIR
+from config import PROCESSED_DIR, TEMPERATURE_RAW_DIR, YEARS
 from extractor import read_temperature_file
+from reference import PROVINCE_CODES
 from transformer import calculate_monthly_province_summary
 from utils import parse_climate_filename
 
@@ -40,8 +41,8 @@ def build_monthly_dataset():
     return pd.DataFrame(rows)
 
 
-def validate_monthly_dataset(df):
-    expected_rows = 13 * 3 * 12
+def validate_monthly_dataset(df, years=YEARS):
+    expected_rows = len(PROVINCE_CODES) * len(years) * 12
     if len(df) != expected_rows:
         raise ValueError(f"{expected_rows} lignes attendues, {len(df)} trouvées.")
 
@@ -69,14 +70,17 @@ def build_annual_dataset(monthly_df):
         MoisDisponibles=("PrecipitationMoyenne", "count"),
         StationsMoyennes=("NombreStations", "mean"),
     )
+    # un cumul annuel sur moins de 12 mois serait sous-estimé
+    annual_df.loc[annual_df["MoisDisponibles"] < 12, "PrecipitationAnnuelle"] = None
     annual_df["PrecipitationAnnuelle"] = annual_df["PrecipitationAnnuelle"].round(2)
     annual_df["StationsMoyennes"] = annual_df["StationsMoyennes"].round(1)
     return annual_df
 
 
-def validate_annual_dataset(df):
-    if len(df) != 39:
-        raise ValueError(f"39 lignes attendues, {len(df)} trouvées.")
+def validate_annual_dataset(df, years=YEARS):
+    expected_rows = len(PROVINCE_CODES) * len(years)
+    if len(df) != expected_rows:
+        raise ValueError(f"{expected_rows} lignes attendues, {len(df)} trouvées.")
 
     incomplete = df[df["MoisDisponibles"] != 12]
 
@@ -86,10 +90,10 @@ def validate_annual_dataset(df):
     print(f"Lignes : {len(df)}")
 
     if incomplete.empty:
-        print("39 séries annuelles complètes : OK")
+        print(f"{expected_rows} séries annuelles complètes : OK")
     else:
-        print("ATTENTION : séries incomplètes :")
-        print(incomplete.to_string(index=False))
+        print(f"ATTENTION : {len(incomplete)} séries incomplètes (valeur annuelle vide) :")
+        print(incomplete[["Province", "Annee", "MoisDisponibles"]].to_string(index=False))
 
 
 def main():

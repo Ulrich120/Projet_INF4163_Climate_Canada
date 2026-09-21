@@ -40,3 +40,6 @@ SQL_Server/
 
 # Sortie de débogage générée par ETL/inspect_pollution.py
 pollution_inspection.txt
+
+# Fichiers mensuels ECCC (~4000 CSV) : regeneres par ETL/download_climate_summaries.py
+Data/Raw/Temperature/

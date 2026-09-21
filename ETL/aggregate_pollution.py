@@ -1,32 +1,15 @@
 from pathlib import Path
 
 import pandas as pd
+from config import YEARS
+from reference import PROVINCE_NAME_TO_CODE
 
 INPUT_FILE = Path("Data/Raw/Pollution/GES_Econ_Can_Prov_Terr.csv")
 OUTPUT_DIR = Path("Data/Processed/Pollution")
 OUTPUT_FILE = OUTPUT_DIR / "pollution_annual.csv"
 
-# période exigée par le projet
-YEARS = [2023, 2024, 2025]
-
-# 2025 n'est pas encore publié dans le fichier officiel au moment du projet
-OFFICIAL_YEARS = [2023, 2024]
-
-PROVINCE_CODES = {
-    "Terre-Neuve-et-Labrador": "NL",
-    "Île-du-Prince-Édouard": "PE",
-    "Nouvelle-Écosse": "NS",
-    "Nouveau-Brunswick": "NB",
-    "Québec": "QC",
-    "Ontario": "ON",
-    "Manitoba": "MB",
-    "Saskatchewan": "SK",
-    "Alberta": "AB",
-    "Colombie-Britannique": "BC",
-    "Yukon": "YT",
-    "Territoires du Nord-Ouest": "NT",
-    "Nunavut": "NU",
-}
+# nom de région (français, tel que dans le fichier ECCC) -> code de province
+PROVINCE_CODES = PROVINCE_NAME_TO_CODE
 
 TOTAL_SOURCES = [
     "Total",
@@ -48,7 +31,7 @@ def read_source_file():
     raise RuntimeError("Impossible de lire le fichier CSV avec les encodages disponibles.")
 
 
-def extract_official_data(df):
+def extract_official_data(df, years=YEARS):
     print(f"Lignes source : {len(df)}")
 
     required_columns = [
@@ -59,9 +42,8 @@ def extract_official_data(df):
     if missing_columns:
         raise ValueError("Colonnes manquantes : " + ", ".join(missing_columns))
 
-    # on ne garde que 2023-2024 (2025 est ajouté à part, voir add_2025_rows)
-    filtered = df[df["Année"].isin(OFFICIAL_YEARS)].copy()
-    print(f"Lignes après filtre années 2023-2024 : {len(filtered)}")
+    filtered = df[df["Année"].isin(years)].copy()
+    print(f"Lignes après filtre sur la période {min(years)}-{max(years)} : {len(filtered)}")
 
     # uniquement les lignes de total provincial/territorial, pas les sous-totaux sectoriels
     filtered = filtered[filtered["Source"].astype(str).str.strip().isin(TOTAL_SOURCES)].copy()
@@ -89,23 +71,27 @@ def extract_official_data(df):
     return result
 
 
-def add_2025_rows(df):
-    # les données provinciales consolidées de 2025 ne sont pas encore publiées par ECCC,
-    # donc on garde des lignes NULL plutôt que d'inventer un chiffre
-    rows_2025 = [
-        {"Province": code, "Annee": 2025, "EmissionGES_MtCO2e": None}
+def add_missing_rows(df, years=YEARS):
+    # les années pas encore publiées par ECCC restent NULL plutôt que d'être estimées
+    existing = set(zip(df["Province"], df["Annee"], strict=True))
+    missing = [
+        {"Province": code, "Annee": year, "EmissionGES_MtCO2e": None}
         for code in sorted(PROVINCE_CODES.values())
+        for year in years
+        if (code, year) not in existing
     ]
-    return pd.concat([df, pd.DataFrame(rows_2025)], ignore_index=True)
+    if not missing:
+        return df
+    return pd.concat([df, pd.DataFrame(missing)], ignore_index=True)
 
 
-def validate(df):
+def validate(df, years=YEARS):
     print()
     print("Validation")
     print("----------")
     print(f"Lignes obtenues : {len(df)}")
 
-    expected_rows = 39  # 13 provinces x 3 années
+    expected_rows = len(PROVINCE_CODES) * len(years)
     if len(df) != expected_rows:
         raise ValueError(f"{expected_rows} lignes attendues, {len(df)} obtenues.")
 
@@ -120,31 +106,35 @@ def validate(df):
     if provinces != expected_provinces:
         raise ValueError(f"Liste des provinces incorrecte.\nAttendu : {expected_provinces}\nObtenu  : {provinces}")
 
-    years = sorted(df["Annee"].unique())
-    if years != YEARS:
-        raise ValueError(f"Années incorrectes : {years}")
+    if sorted(df["Annee"].unique()) != sorted(years):
+        raise ValueError(f"Années incorrectes : {sorted(df['Annee'].unique())}")
 
     counts = df.groupby("Province").size()
-    if (counts != 3).any():
-        raise ValueError(f"Certaines provinces n'ont pas exactement 3 années :\n{counts[counts != 3]}")
+    if (counts != len(years)).any():
+        raise ValueError(f"Certaines provinces n'ont pas exactement {len(years)} années :\n{counts[counts != len(years)]}")
 
-    official_data = df[df["Annee"].isin([2023, 2024])]
-    if official_data["EmissionGES_MtCO2e"].isna().sum() != 0:
-        raise ValueError("Des valeurs officielles 2023 ou 2024 sont manquantes.")
+    # pas de trou : toutes les années jusqu'à la dernière année publiée sont renseignées,
+    # toutes les suivantes sont vides
+    filled = df.dropna(subset=["EmissionGES_MtCO2e"])
+    if filled.empty:
+        raise ValueError("Aucune valeur officielle trouvée.")
+    last_official = int(filled["Annee"].max())
 
-    data_2025 = df[df["Annee"] == 2025]
-    if len(data_2025) != 13:
-        raise ValueError("13 lignes attendues pour 2025.")
-    if data_2025["EmissionGES_MtCO2e"].isna().sum() != 13:
-        raise ValueError("Les 13 valeurs de 2025 doivent être NULL.")
+    before = df[df["Annee"] <= last_official]
+    if before["EmissionGES_MtCO2e"].isna().any():
+        raise ValueError(f"Des valeurs officielles manquent avant {last_official}.")
 
-    print("13 provinces/territoires : OK")
-    print("Années 2023-2025 : OK")
-    print("3 années par province : OK")
-    print("2023 : données officielles complètes")
-    print("2024 : données officielles complètes")
-    print("2025 : 13 valeurs NULL (données officielles non disponibles)")
-    print("39 lignes : OK")
+    after = df[df["Annee"] > last_official]
+    if after["EmissionGES_MtCO2e"].notna().any():
+        raise ValueError("Valeurs inattendues après la dernière année officielle.")
+
+    print(f"{len(PROVINCE_CODES)} provinces/territoires : OK")
+    print(f"Années {min(years)}-{max(years)} : OK")
+    print(f"{min(years)}-{last_official} : données officielles complètes")
+    if last_official < max(years):
+        label = str(max(years)) if last_official + 1 == max(years) else f"{last_official + 1}-{max(years)}"
+        print(f"{label} : NULL (données officielles non disponibles)")
+    print(f"{expected_rows} lignes : OK")
 
 
 def main():
@@ -152,7 +142,7 @@ def main():
 
     source_df = read_source_file()
     annual_df = extract_official_data(source_df)
-    annual_df = add_2025_rows(annual_df)
+    annual_df = add_missing_rows(annual_df)
     annual_df = annual_df.sort_values(["Province", "Annee"]).reset_index(drop=True)
 
     validate(annual_df)
@@ -165,8 +155,8 @@ def main():
     print("=" * 70)
     print(f"Fichier : {OUTPUT_FILE}")
     print()
-    print("Aperçu annuel :")
-    print(annual_df.to_string(index=False))
+    print("Aperçu :")
+    print(annual_df.tail(30).to_string(index=False))
 
 
 if __name__ == "__main__":
