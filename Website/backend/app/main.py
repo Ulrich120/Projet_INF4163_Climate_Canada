@@ -81,7 +81,6 @@ def get_temperature():
         FROM dbo.Temperature t
         INNER JOIN dbo.Province p ON t.ProvinceID = p.ProvinceID
         INNER JOIN dbo.Annee a ON t.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         ORDER BY p.CodeProvince, a.ValeurAnnee;
     """
     try:
@@ -114,7 +113,6 @@ def get_precipitation():
         FROM dbo.Precipitation pr
         INNER JOIN dbo.Province p ON pr.ProvinceID = p.ProvinceID
         INNER JOIN dbo.Annee a ON pr.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         ORDER BY p.CodeProvince, a.ValeurAnnee;
     """
     try:
@@ -147,7 +145,6 @@ def get_pollution():
         FROM dbo.Pollution po
         INNER JOIN dbo.Province p ON po.ProvinceID = p.ProvinceID
         INNER JOIN dbo.Annee a ON po.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         ORDER BY p.CodeProvince, a.ValeurAnnee;
     """
     try:

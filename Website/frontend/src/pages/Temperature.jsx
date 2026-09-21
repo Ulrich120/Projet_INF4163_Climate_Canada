@@ -14,6 +14,15 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import {
+  firstWithData,
+  lastWithData,
+  mean,
+  nationalAverages,
+  round2,
+  toNumber,
+  yearsIn,
+} from "../utils/series";
 
 ChartJS.register(
   CategoryScale,
@@ -67,45 +76,27 @@ function Temperature() {
 
   const selectedProvinceName = provinceData[0]?.nomProvince || selectedProvince;
 
-  const getValue = (year) => {
-    const row = provinceData.find((item) => item.annee === year);
-    return row ? Number(row.temperature) : null;
-  };
+  const years = useMemo(() => yearsIn(data), [data]);
+  const periodLabel = years.length ? `${years[0]} à ${years[years.length - 1]}` : "";
 
-  const temp2023 = getValue(2023);
-  const temp2024 = getValue(2024);
-  const temp2025 = getValue(2025);
+  const first = firstWithData(provinceData, "temperature");
+  const latest = lastWithData(provinceData, "temperature");
+  const periodAverage = mean(provinceData.map((item) => toNumber(item.temperature)));
 
   const variation =
-    temp2023 !== null && temp2025 !== null
-      ? (temp2025 - temp2023).toFixed(2)
+    first && latest && first.annee !== latest.annee
+      ? (latest.value - first.value).toFixed(2)
       : "--";
 
-  const annualAverages = useMemo(() => {
-    return [2023, 2024, 2025].map((year) => {
-      const values = data
-        .filter((item) => item.annee === year)
-        .map((item) => Number(item.temperature))
-        .filter((value) => !Number.isNaN(value));
-
-      const average =
-        values.length > 0
-          ? values.reduce((sum, value) => sum + value, 0) / values.length
-          : null;
-
-      return {
-        year,
-        average,
-      };
-    });
-  }, [data]);
+  const annualAverages = useMemo(() => nationalAverages(data, "temperature"), [data]);
 
   const lineChartData = {
     labels: provinceData.map((item) => item.annee),
     datasets: [
       {
         label: `Température moyenne — ${selectedProvince}`,
-        data: provinceData.map((item) => Number(item.temperature)),
+        data: provinceData.map((item) => toNumber(item.temperature)),
+        spanGaps: false,
         borderColor: "#2563eb",
         backgroundColor: "rgba(37, 99, 235, 0.14)",
         pointBackgroundColor: "#ffffff",
@@ -124,15 +115,9 @@ function Temperature() {
     datasets: [
       {
         label: "Température moyenne nationale",
-        data: annualAverages.map((item) =>
-          item.average !== null ? Number(item.average.toFixed(2)) : null,
-        ),
-        backgroundColor: [
-          "rgba(34, 197, 94, 0.65)",
-          "rgba(22, 163, 74, 0.75)",
-          "rgba(21, 128, 61, 0.85)",
-        ],
-        borderRadius: 8,
+        data: annualAverages.map((item) => round2(item.average)),
+        backgroundColor: "rgba(22, 163, 74, 0.75)",
+        borderRadius: 6,
       },
     ],
   };
@@ -205,8 +190,8 @@ function Temperature() {
           </h1>
 
           <p className="page-subtitle mb-0">
-            Température annuelle moyenne par province et territoire — 2023 à
-            2025
+            Température annuelle moyenne par province et territoire —{" "}
+            {periodLabel}
           </p>
         </div>
 
@@ -242,7 +227,7 @@ function Temperature() {
 
                 <div>
                   <div className="fw-semibold text-danger">
-                    Température 2025
+                    Température {latest?.annee ?? ""}
                   </div>
 
                   <div className="small text-muted">
@@ -250,7 +235,7 @@ function Temperature() {
                   </div>
 
                   <div className="kpi-value mt-2 text-danger">
-                    {temp2025?.toFixed(2) ?? "--"} °C
+                    {latest?.value.toFixed(2) ?? "--"} °C
                   </div>
 
                   <div className="small text-muted mt-1">Moyenne annuelle</div>
@@ -270,7 +255,7 @@ function Temperature() {
 
                 <div>
                   <div className="fw-semibold text-primary">
-                    Température 2024
+                    Moyenne {periodLabel.replace(" à ", "–")}
                   </div>
 
                   <div className="small text-muted">
@@ -278,10 +263,10 @@ function Temperature() {
                   </div>
 
                   <div className="kpi-value mt-2 text-primary">
-                    {temp2024?.toFixed(2) ?? "--"} °C
+                    {periodAverage?.toFixed(2) ?? "--"} °C
                   </div>
 
-                  <div className="small text-muted mt-1">Moyenne annuelle</div>
+                  <div className="small text-muted mt-1">Sur toute la période</div>
                 </div>
               </div>
             </div>
@@ -298,7 +283,7 @@ function Temperature() {
 
                 <div>
                   <div className="fw-semibold text-success">
-                    Variation 2023 → 2025
+                    Variation {first?.annee ?? ""} → {latest?.annee ?? ""}
                   </div>
 
                   <div className="small text-muted">
@@ -459,7 +444,7 @@ function Temperature() {
             </thead>
 
             <tbody>
-              {data.map((item, index) => (
+              {provinceData.map((item, index) => (
                 <tr key={`${item.province}-${item.annee}-${index}`}>
                   <td>
                     <span className="province-badge">{item.province}</span>
@@ -470,15 +455,21 @@ function Temperature() {
                   <td className="fw-semibold">{item.annee}</td>
 
                   <td>
-                    <span
-                      className={
-                        Number(item.temperature) < 0
-                          ? "text-primary fw-semibold"
-                          : "text-danger fw-semibold"
-                      }
-                    >
-                      {item.temperature} °C
-                    </span>
+                    {toNumber(item.temperature) === null ? (
+                      <span className="badge text-bg-secondary">
+                        Série incomplète
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          Number(item.temperature) < 0
+                            ? "text-primary fw-semibold"
+                            : "text-danger fw-semibold"
+                        }
+                      >
+                        {item.temperature} °C
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
