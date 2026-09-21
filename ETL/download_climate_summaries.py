@@ -1,72 +1,88 @@
+"""Télécharge les sommaires climatiques mensuels d'ECCC (un CSV par province/mois/année).
+
+Usage : python ETL/download_climate_summaries.py [--reverse]
+
+Les fichiers déjà présents sont ignorés : on peut relancer le script après une coupure.
+"""
+
 import os
+import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
-
-OUTPUT_FOLDER = "Data/Raw/Temperature"
+from config import TEMPERATURE_RAW_DIR, YEARS
+from reference import PROVINCE_CODES
 
 BASE_URL = "https://climat.meteo.gc.ca/prods_servs/cdn_climate_summary_report_f.html"
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"}
 
-PROVINCES = ["NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU"]
-YEARS = [2023, 2024, 2025]
-MONTHS = range(1, 13)
+WORKERS = 4  # on reste poli avec le serveur d'ECCC
+RETRIES = 3
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0"
-    )
-}
 
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+def target_path(province, year, month):
+    return TEMPERATURE_RAW_DIR / f"fr_climat_sommaires_{province}_{month:02d}-{year}.csv"
 
-download_count = 0
-error_count = 0
-total_files = len(PROVINCES) * len(YEARS) * len(MONTHS)
 
-for province in PROVINCES:
-    print(f"\n--- Province : {province} ---")
+def download_one(province, year, month):
+    params = {
+        "intYear": year,
+        "intMonth": month,
+        "prov": province,
+        "dataFormat": "csv",
+        "btnSubmit": "Télécharger des données",
+    }
 
-    for year in YEARS:
-        for month in MONTHS:
-            filename = f"fr_climat_sommaires_{province}_{month:02d}-{year}.csv"
-            filepath = os.path.join(OUTPUT_FOLDER, filename)
+    last_error = None
+    for attempt in range(1, RETRIES + 1):
+        try:
+            response = requests.get(BASE_URL, params=params, headers=HEADERS, timeout=60)
+            response.raise_for_status()
+            if "text/csv" not in response.headers.get("Content-Type", ""):
+                raise ValueError(f"réponse inattendue : {response.headers.get('Content-Type')}")
 
-            if os.path.exists(filepath):
-                print("   déjà téléchargé, on passe")
-                continue
+            path = target_path(province, year, month)
+            tmp = path.with_suffix(f".{os.getpid()}.part")
+            tmp.write_bytes(response.content)
+            tmp.replace(path)  # écriture atomique : pas de fichier à moitié écrit
+            return None
+        except Exception as error:
+            last_error = error
+            time.sleep(2 * attempt)
 
-            params = {
-                "intYear": year,
-                "intMonth": month,
-                "prov": province,
-                "dataFormat": "csv",
-                "btnSubmit": "Télécharger des données",
-            }
+    return f"{province} {month:02d}-{year} : {last_error}"
 
-            current = download_count + error_count + 1
-            print(f"[{current}/{total_files}] {filename}")
 
-            try:
-                response = requests.get(BASE_URL, params=params, headers=HEADERS, timeout=60)
-                response.raise_for_status()
+def main():
+    TEMPERATURE_RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-                content_type = response.headers.get("Content-Type", "")
-                if "text/csv" not in content_type:
-                    print(f"   réponse inattendue ({content_type}), fichier ignoré")
-                    error_count += 1
-                    continue
+    todo = [
+        (province, year, month)
+        for year in YEARS
+        for province in PROVINCE_CODES
+        for month in range(1, 13)
+        if not target_path(province, year, month).exists()
+    ]
+    if "--reverse" in sys.argv:  # pour lancer un second processus qui part de la fin
+        todo.reverse()
+    total = len(YEARS) * len(PROVINCE_CODES) * 12
+    print(f"{total - len(todo)}/{total} fichiers déjà présents, {len(todo)} à télécharger")
 
-                with open(filepath, "wb") as file:
-                    file.write(response.content)
-                download_count += 1
+    errors = []
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        futures = [pool.submit(download_one, *task) for task in todo]
+        for done, future in enumerate(as_completed(futures), start=1):
+            error = future.result()
+            if error:
+                errors.append(error)
+            if done % 100 == 0 or done == len(todo):
+                print(f"[{done}/{len(todo)}] erreurs : {len(errors)}", flush=True)
 
-            except Exception as e:
-                print(f"   échec : {e}")
-                error_count += 1
+    print("\nTéléchargement terminé")
+    for error in errors:
+        print(f"  échec : {error}")
 
-            time.sleep(0.5)  # pour ne pas marteler le site d'ECCC
 
-print("\nTéléchargement terminé")
-print(f"Fichiers téléchargés : {download_count}")
-print(f"Erreurs : {error_count}")
+if __name__ == "__main__":
+    main()
