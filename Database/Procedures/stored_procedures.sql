@@ -1,5 +1,6 @@
 /* PROJET INF4163 - PROCEDURES STOCKEES
-   Sensibilisation au rechauffement climatique */
+   Sensibilisation au rechauffement climatique
+   Les analyses portent sur toutes les annees presentes dans la base. */
 
 
 /* 1. TEMPERATURE - ANNEE LA PLUS / MOINS CHAUDE */
@@ -21,7 +22,6 @@ BEGIN
         FROM Temperature t
         INNER JOIN Annee a
             ON t.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY a.ValeurAnnee
     )
 
@@ -42,7 +42,6 @@ BEGIN
         FROM Temperature t
         INNER JOIN Annee a
             ON t.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY a.ValeurAnnee
     )
 
@@ -76,7 +75,6 @@ BEGIN
             ON t.ProvinceID = p.ProvinceID
         INNER JOIN Annee a
             ON t.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY
             p.CodeProvince,
             p.NomProvince
@@ -103,7 +101,6 @@ BEGIN
             ON t.ProvinceID = p.ProvinceID
         INNER JOIN Annee a
             ON t.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY
             p.CodeProvince,
             p.NomProvince
@@ -142,9 +139,7 @@ BEGIN
         FROM Pollution po
         INNER JOIN Annee a
             ON po.AnneeID = a.AnneeID
-        WHERE
-            a.ValeurAnnee BETWEEN 2023 AND 2025
-            AND po.EmissionGES_MtCO2e IS NOT NULL
+        WHERE po.EmissionGES_MtCO2e IS NOT NULL
         GROUP BY a.ValeurAnnee
     )
 
@@ -168,9 +163,7 @@ BEGIN
         FROM Pollution po
         INNER JOIN Annee a
             ON po.AnneeID = a.AnneeID
-        WHERE
-            a.ValeurAnnee BETWEEN 2023 AND 2025
-            AND po.EmissionGES_MtCO2e IS NOT NULL
+        WHERE po.EmissionGES_MtCO2e IS NOT NULL
         GROUP BY a.ValeurAnnee
     )
 
@@ -207,9 +200,7 @@ BEGIN
             ON po.ProvinceID = p.ProvinceID
         INNER JOIN Annee a
             ON po.AnneeID = a.AnneeID
-        WHERE
-            a.ValeurAnnee BETWEEN 2023 AND 2025
-            AND po.EmissionGES_MtCO2e IS NOT NULL
+        WHERE po.EmissionGES_MtCO2e IS NOT NULL
         GROUP BY
             p.CodeProvince,
             p.NomProvince
@@ -239,9 +230,7 @@ BEGIN
             ON po.ProvinceID = p.ProvinceID
         INNER JOIN Annee a
             ON po.AnneeID = a.AnneeID
-        WHERE
-            a.ValeurAnnee BETWEEN 2023 AND 2025
-            AND po.EmissionGES_MtCO2e IS NOT NULL
+        WHERE po.EmissionGES_MtCO2e IS NOT NULL
         GROUP BY
             p.CodeProvince,
             p.NomProvince
@@ -279,7 +268,6 @@ BEGIN
         FROM Precipitation pr
         INNER JOIN Annee a
             ON pr.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY a.ValeurAnnee
     )
 
@@ -300,7 +288,6 @@ BEGIN
         FROM Precipitation pr
         INNER JOIN Annee a
             ON pr.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY a.ValeurAnnee
     )
 
@@ -334,7 +321,6 @@ BEGIN
             ON pr.ProvinceID = p.ProvinceID
         INNER JOIN Annee a
             ON pr.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY
             p.CodeProvince,
             p.NomProvince
@@ -361,7 +347,6 @@ BEGIN
             ON pr.ProvinceID = p.ProvinceID
         INNER JOIN Annee a
             ON pr.AnneeID = a.AnneeID
-        WHERE a.ValeurAnnee BETWEEN 2023 AND 2025
         GROUP BY
             p.CodeProvince,
             p.NomProvince
