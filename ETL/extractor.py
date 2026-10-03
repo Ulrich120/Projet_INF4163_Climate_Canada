@@ -6,14 +6,14 @@ def list_temperature_files():
     return sorted(TEMPERATURE_RAW_DIR.glob(TEMPERATURE_FILE_PATTERN))
 
 
-def read_temperature_file(file_path):
+def read_temperature_file(file_path, dtype=None):
     # les fichiers ECCC ne sont pas tous encodés pareil selon l'année du téléchargement
     encodings = ["utf-8-sig", "utf-8", "cp1252", "latin1"]
     last_error = None
 
     for encoding in encodings:
         try:
-            return pd.read_csv(file_path, encoding=encoding, sep=None, engine="python")
+            return pd.read_csv(file_path, encoding=encoding, sep=None, engine="python", dtype=dtype)
         except UnicodeDecodeError as exc:
             last_error = exc
 

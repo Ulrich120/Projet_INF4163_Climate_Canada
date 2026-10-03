@@ -43,3 +43,6 @@ pollution_inspection.txt
 
 # Fichiers mensuels ECCC (~4000 CSV) : regeneres par ETL/download_climate_summaries.py
 Data/Raw/Temperature/
+
+# Tables intermédiaires régénérables (ETL/build_station_table.py)
+Data/Interim/
