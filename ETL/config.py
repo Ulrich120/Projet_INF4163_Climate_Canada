@@ -5,6 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "Data"
 RAW_DIR = DATA_DIR / "Raw"
 PROCESSED_DIR = DATA_DIR / "Processed"
+INTERIM_DIR = DATA_DIR / "Interim"
 DATABASE_DIR = BASE_DIR / "Database"
 
 TEMPERATURE_RAW_DIR = RAW_DIR / "Temperature"
