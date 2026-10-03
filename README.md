@@ -74,6 +74,20 @@ Les scripts dans `ETL/` suivent à peu près ce chemin pour chaque thème : tél
 
 C'est volontairement découpé en petits scripts plutôt qu'un seul gros programme — plus facile à relancer un morceau seul quand une source change de format en cours de route (ce qui est arrivé plus d'une fois avec les fichiers d'Environnement Canada).
 
+## Ce que montrent les données
+
+Premier constat, avant tout résultat climatique : **la moyenne simple des stations ne permet pas de mesurer une tendance**. Le réseau d'ECCC passe d'environ 1 780 stations actives en 2000 à environ 1 000 en 2025, si bien que la moyenne annuelle du Québec « refroidit » de 0,74 °C par décennie alors que le même réseau, suivi station par station, se réchauffe.
+
+![Moyenne simple contre anomalies par station](docs/figures/tendances_temperature.png)
+
+En comparant chaque station à sa propre moyenne (`ETL/station_anomalies.py`) :
+
+- les 13 provinces et territoires se réchauffent, de +0,12 à +0,62 °C par décennie ;
+- pour le Canada (provinces à poids égaux) : **+0,35 °C par décennie, intervalle de confiance à 95 % de 0,04 à 0,67** ;
+- l'incertitude reste large : sur 26 ans, seules 5 provinces sur 13 ont un intervalle qui exclut zéro.
+
+La méthode est validée sur un réseau synthétique dont on connaît la bonne réponse (tests dans `tests/etl/`). Méthode complète et limites : [`Data/README.md`](Data/README.md).
+
 ## Power BI
 
 En plus du dashboard React, `PowerBI/` explique comment brancher un rapport Power BI directement sur les trois bases SQL Server, pour une analyse plus libre que ce que permet l'interface web (croisements, filtres dynamiques, export). Voir [`PowerBI/README.md`](PowerBI/README.md) pour la marche à suivre — en résumé, Power BI Desktop se connecte en direct aux bases via le même driver ODBC que le backend.
@@ -141,6 +155,11 @@ python ETL/aggregate_temperature.py
 python ETL/aggregate_precipitation.py
 python ETL/aggregate_pollution.py
 python ETL/generate_sql.py                   # réécrit Database/*/02_insert_*.sql
+
+# analyse de tendance par stations (optionnel)
+python ETL/build_station_table.py            # ~3 min, produit Data/Interim/stations_monthly.csv.gz
+python ETL/station_anomalies.py              # anomalies et tendances -> Data/Processed/Temperature/
+python ETL/plot_trends.py                    # figure -> docs/figures/
 ```
 
 La période se règle dans `ETL/config.py` (`START_YEAR`, `END_YEAR`).
