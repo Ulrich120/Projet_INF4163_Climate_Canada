@@ -38,3 +38,23 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  docker:
+    name: Docker Compose (démarrage complet)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # .env.example contient ACCEPT_EULA=Y (licences Microsoft SQL Server et pilote ODBC) et un mot de passe de démonstration
+      - run: cp .env.example .env
+      - name: Construire et démarrer
+        run: docker compose up --build --detach
+      - name: Attendre l'application (SQL Server met un moment à démarrer)
+        run: curl -fsS --retry 60 --retry-delay 5 --retry-connrefused --retry-all-errors http://localhost:8080/api/health
+      - name: Vérifier que les données sont servies
+        run: |
+          curl -fsS http://localhost:8080/api/temperature/trends | python3 -c "import json,sys; rows=json.load(sys.stdin); assert len(rows) == 42, len(rows); print(len(rows), 'tendances de température')"
+          curl -fsS http://localhost:8080/api/precipitation/anomalies | python3 -c "import json,sys; rows=json.load(sys.stdin); assert len(rows) == 364, len(rows); print(len(rows), 'anomalies de précipitations')"
+          curl -fsS http://localhost:8080/temperature | grep -q '<div id="root">'
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs --no-color
