@@ -12,7 +12,8 @@ from utils import parse_climate_filename
 
 STATIONS_FILE = INTERIM_DIR / "stations_monthly.csv.gz"
 
-KEPT_COLUMNS = ["ID_Clim", "Nom", "Lat", "Long", "Tm", "P"]
+# JsP = nombre de jours sans mesure de précipitation dans le mois (le total P est alors sous-estimé)
+KEPT_COLUMNS = ["ID_Clim", "Nom", "Lat", "Long", "Tm", "P", "JsP"]
 
 
 def read_station_month(file_path):
@@ -28,7 +29,7 @@ def read_station_month(file_path):
 
     df = df[KEPT_COLUMNS].copy()
     df["ID_Clim"] = df["ID_Clim"].astype("string").str.strip()
-    for column in ("Lat", "Long", "Tm", "P"):
+    for column in ("Lat", "Long", "Tm", "P", "JsP"):
         df[column] = convert_french_decimal(df[column])
 
     df["Province"] = meta["province_code"]
