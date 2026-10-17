@@ -1,0 +1,66 @@
+# Tout le projet en une commande :  docker compose up --build   (puis http://localhost:8080)
+# Avant la première fois : copier .env.example vers .env (voir README, section Docker).
+
+name: climate-canada
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: ${ACCEPT_EULA:?copie .env.example vers .env avant de lancer docker compose}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?copie .env.example vers .env avant de lancer docker compose}
+      MSSQL_PID: Express
+    ports:
+      # uniquement depuis cette machine (SSMS, Power BI) ; port décalé pour ne pas gêner un SQL Server local
+      - "127.0.0.1:${DB_PORT:-14333}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # tâche ponctuelle : crée les bases à partir de Database/ puis s'arrête
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+    volumes:
+      - ./Database:/database:ro
+      - ./docker/db-init.sh:/db-init.sh:ro
+    entrypoint: ["/bin/bash", "/db-init.sh"]
+    restart: "no"
+
+  api:
+    build:
+      context: ./Website/backend
+      args:
+        ACCEPT_EULA: ${ACCEPT_EULA:?copie .env.example vers .env avant de lancer docker compose}
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      SQL_SERVER: db
+      SQL_USER: sa
+      SQL_PASSWORD: ${MSSQL_SA_PASSWORD}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build: ./Website/frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  sqlserver-data:
