@@ -76,3 +76,35 @@ def test_anomaly_endpoints_turn_database_errors_into_500(monkeypatch, path):
 
     monkeypatch.setattr(main, "execute_query", boom)
     assert client.get(path).status_code == 500
+
+
+def test_precipitation_anomalies_endpoint_queries_the_precipitation_view(monkeypatch):
+    seen = {}
+
+    def fake_query(db, query):
+        seen["db"], seen["query"] = db, query
+        return [{"province": "YT", "annee": 2000, "anomalie": None, "moyenneSimple": 366.54}]
+
+    monkeypatch.setattr(main, "execute_query", fake_query)
+    response = client.get("/api/precipitation/anomalies")
+    assert response.status_code == 200
+    assert response.json()[0]["anomalie"] is None  # le Yukon n'a pas de station de longue durée
+    assert seen["db"] == "PrecipitationDB"
+    assert "vw_PrecipitationAnomalie" in seen["query"]
+
+
+def test_precipitation_trends_endpoint(monkeypatch):
+    rows = [{"province": "CA", "methode": "anomalie_stations_longues", "pente": -0.93, "icBas": -4.38, "icHaut": 2.51}]
+    monkeypatch.setattr(main, "execute_query", lambda db, query: rows)
+    response = client.get("/api/precipitation/trends")
+    assert response.status_code == 200
+    assert response.json() == rows
+
+
+@pytest.mark.parametrize("path", ["/api/precipitation/anomalies", "/api/precipitation/trends"])
+def test_precipitation_anomaly_endpoints_turn_errors_into_500(monkeypatch, path):
+    def boom(db, query):
+        raise RuntimeError("base indisponible")
+
+    monkeypatch.setattr(main, "execute_query", boom)
+    assert client.get(path).status_code == 500

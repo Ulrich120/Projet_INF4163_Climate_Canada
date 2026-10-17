@@ -163,6 +163,50 @@ def get_precipitation():
         raise HTTPException(status_code=500, detail=str(error))
 
 
+@app.get("/api/precipitation/anomalies")
+def get_precipitation_anomalies():
+    # anomalie en % de la normale de chaque station ; province "CA" = Canada (moyenne des provinces).
+    # null = pas assez de stations de longue durée. moyenneSimple = cumul des stations actives (mm),
+    # non comparable d'une année à l'autre.
+    query = """
+        SELECT
+            CodeProvince AS province,
+            NomProvince AS nomProvince,
+            Annee AS annee,
+            AnomalieStationsLongues AS anomalie,
+            AnomalieToutesStations AS anomalieToutesStations,
+            MoyenneSimple AS moyenneSimple
+        FROM dbo.vw_PrecipitationAnomalie
+        ORDER BY CodeProvince, Annee;
+    """
+    try:
+        return execute_query("PrecipitationDB", query)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+
+@app.get("/api/precipitation/trends")
+def get_precipitation_trends():
+    # pente en % de la normale par décennie (anomalies) ou en mm par décennie (methode moyenne_simple)
+    query = """
+        SELECT
+            CodeProvince AS province,
+            NomProvince AS nomProvince,
+            Methode AS methode,
+            PenteParDecennie AS pente,
+            IC95_Bas AS icBas,
+            IC95_Haut AS icHaut,
+            PValeur AS pValeur,
+            NbAnnees AS nbAnnees
+        FROM dbo.vw_PrecipitationTendance
+        ORDER BY CodeProvince, Methode;
+    """
+    try:
+        return execute_query("PrecipitationDB", query)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+
 @app.get("/api/results/precipitation")
 def get_precipitation_results():
     try:
