@@ -93,10 +93,90 @@ def generate(domain_name):
     print(f"{output.relative_to(DATABASE_DIR.parent)} : {len(df) - skipped} INSERT, {skipped} série(s) ignorée(s)")
 
 
+ANOMALY_COLUMNS = [
+    ("AnomalieStationsLongues", "AnomalieStationsLongues", 3),
+    ("AnomalieToutesStations", "AnomalieToutesStations", 3),
+    ("MoyenneSimple", "MoyenneSimple", 3),
+    ("NbStationsLongues", "NbStationsLongues", 1),
+]
+TREND_COLUMNS = [("PenteParDecennie", 4), ("IC95_Bas", 4), ("IC95_Haut", 4), ("PValeur", 6)]
+NATIONAL = "CANADA"  # ProvinceID NULL dans les tables d'anomalies et de tendances
+
+
+def sql_number(value, decimals):
+    return "NULL" if pd.isna(value) else f"{float(value):.{decimals}f}"
+
+
+def lookup(province, year):
+    """FROM/WHERE qui retrouve les identifiants (le Canada n'a pas de ProvinceID)."""
+    if province == NATIONAL:
+        return "NULL", f"FROM Annee a WHERE a.ValeurAnnee = {int(year)}"
+    return "p.ProvinceID", f"FROM Province p, Annee a WHERE p.CodeProvince = '{province}' AND a.ValeurAnnee = {int(year)}"
+
+
+def build_anomaly_sql(annual, trends, years=YEARS):
+    """Script SQL des tables TemperatureAnomalie et TemperatureTendance (rechargées à chaque exécution)."""
+    lines = [
+        "USE TemperatureDB;",
+        "GO",
+        "",
+        f"-- Anomalies de température par station et tendances, période {min(years)}-{max(years)}",
+        "-- Fichier généré par ETL/generate_sql.py à partir de ETL/station_anomalies.py, ne pas modifier à la main.",
+        "-- ProvinceID NULL = Canada (moyenne des provinces à poids égaux).",
+        "",
+        "DELETE FROM TemperatureTendance;",
+        "DELETE FROM TemperatureAnomalie;",
+        "",
+    ]
+
+    columns = ", ".join(["ProvinceID", "AnneeID"] + [sql_name for sql_name, _, _ in ANOMALY_COLUMNS])
+    for row in annual.sort_values(["Province", "Annee"]).to_dict("records"):
+        province_sql, source = lookup(row["Province"], row["Annee"])
+        values = ", ".join(sql_number(row[csv_name], decimals) for _, csv_name, decimals in ANOMALY_COLUMNS)
+        lines.append(
+            f"INSERT INTO TemperatureAnomalie ({columns}) "
+            f"SELECT {province_sql}, a.AnneeID, {values} {source};"
+        )
+
+    lines.append("")
+    columns = ", ".join(["ProvinceID", "Methode"] + [name for name, _ in TREND_COLUMNS] + ["NbAnnees"])
+    for row in trends.sort_values(["Province", "Methode"]).to_dict("records"):
+        province = row["Province"]
+        if province == NATIONAL:
+            province_sql, source = "NULL", ""
+        else:
+            province_sql, source = "p.ProvinceID", f"FROM Province p WHERE p.CodeProvince = '{province}'"
+        values = ", ".join(sql_number(row[name], decimals) for name, decimals in TREND_COLUMNS)
+        lines.append(
+            f"INSERT INTO TemperatureTendance ({columns}) "
+            f"SELECT {province_sql}, '{row['Methode']}', {values}, {int(row['NbAnnees'])} {source};"
+        )
+
+    lines += [
+        "GO",
+        "",
+        "-- Vérification",
+        "SELECT COUNT(*) AS NombreAnomalies FROM TemperatureAnomalie;",
+        "SELECT COUNT(*) AS NombreTendances FROM TemperatureTendance;",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def generate_anomalies():
+    annual = pd.read_csv(PROCESSED_DIR / "Temperature" / "temperature_anomaly_annual.csv")
+    trends = pd.read_csv(PROCESSED_DIR / "Temperature" / "temperature_trends.csv")
+    output = DATABASE_DIR / "TemperatureDB" / "03_insert_temperature_anomalies.sql"
+    output.write_text(build_anomaly_sql(annual, trends), encoding="utf-8")
+    print(f"{output.relative_to(DATABASE_DIR.parent)} : {len(annual)} anomalies, {len(trends)} tendances")
+
+
 def main():
-    names = sys.argv[1:] or list(DOMAINS)
+    names = sys.argv[1:] or [*DOMAINS, "anomalies"]
     for name in names:
-        generate(name)
+        if name == "anomalies":
+            generate_anomalies()
+        else:
+            generate(name)
 
 
 if __name__ == "__main__":

@@ -8,50 +8,35 @@
 USE TemperatureDB;
 GO
 
+/* Les annees sont classees sur l'anomalie nationale (ecart de chaque station a sa propre moyenne,
+   puis moyenne des provinces). La moyenne simple des stations actives n'est pas comparable d'une
+   annee a l'autre : le reseau de stations change (voir Data/README.md). */
 CREATE OR ALTER PROCEDURE dbo.sp_AnneePlusMoinsChaude
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    ;WITH MoyennesAnnuelles AS
-    (
-        SELECT
-            a.ValeurAnnee AS Annee,
-            AVG(CAST(t.TemperatureMoyenne AS DECIMAL(10,2)))
-                AS TemperatureMoyenne
-        FROM Temperature t
-        INNER JOIN Annee a
-            ON t.AnneeID = a.AnneeID
-        GROUP BY a.ValeurAnnee
-    )
-
     SELECT TOP 1
         'Annee la plus chaude' AS Resultat,
-        Annee,
-        CAST(TemperatureMoyenne AS DECIMAL(10,2))
-            AS TemperatureMoyenne
-    FROM MoyennesAnnuelles
-    ORDER BY TemperatureMoyenne DESC, Annee ASC;
-
-    ;WITH MoyennesAnnuelles AS
-    (
-        SELECT
-            a.ValeurAnnee AS Annee,
-            AVG(CAST(t.TemperatureMoyenne AS DECIMAL(10,2)))
-                AS TemperatureMoyenne
-        FROM Temperature t
-        INNER JOIN Annee a
-            ON t.AnneeID = a.AnneeID
-        GROUP BY a.ValeurAnnee
-    )
+        a.ValeurAnnee AS Annee,
+        CAST(t.AnomalieStationsLongues AS DECIMAL(10,2)) AS AnomalieMoyenne
+    FROM TemperatureAnomalie t
+    INNER JOIN Annee a
+        ON t.AnneeID = a.AnneeID
+    WHERE t.ProvinceID IS NULL
+        AND t.AnomalieStationsLongues IS NOT NULL
+    ORDER BY t.AnomalieStationsLongues DESC, a.ValeurAnnee ASC;
 
     SELECT TOP 1
         'Annee la moins chaude' AS Resultat,
-        Annee,
-        CAST(TemperatureMoyenne AS DECIMAL(10,2))
-            AS TemperatureMoyenne
-    FROM MoyennesAnnuelles
-    ORDER BY TemperatureMoyenne ASC, Annee ASC;
+        a.ValeurAnnee AS Annee,
+        CAST(t.AnomalieStationsLongues AS DECIMAL(10,2)) AS AnomalieMoyenne
+    FROM TemperatureAnomalie t
+    INNER JOIN Annee a
+        ON t.AnneeID = a.AnneeID
+    WHERE t.ProvinceID IS NULL
+        AND t.AnomalieStationsLongues IS NOT NULL
+    ORDER BY t.AnomalieStationsLongues ASC, a.ValeurAnnee ASC;
 END;
 GO
 

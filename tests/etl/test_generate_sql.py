@@ -35,3 +35,33 @@ def test_pollution_script_keeps_null_values():
     assert skipped == 0
     assert "SELECT p.ProvinceID, a.AnneeID, NULL FROM Province p" in sql
     assert "INSERT INTO SourceDonnee" not in sql
+
+
+def test_anomaly_script_handles_the_national_row_and_missing_values():
+    from generate_sql import build_anomaly_sql
+
+    annual = pd.DataFrame({
+        "Province": ["QC", "CANADA"],
+        "Annee": [2000, 2000],
+        "AnomalieStationsLongues": [0.4249, -0.465],
+        "AnomalieToutesStations": [0.485, None],
+        "MoyenneSimple": [4.883, 1.815],
+        "NbStationsLongues": [59.33, None],
+    })
+    trends = pd.DataFrame({
+        "Province": ["QC", "CANADA"],
+        "Methode": ["anomalie_stations_longues"] * 2,
+        "PenteParDecennie": [0.44, 0.353],
+        "IC95_Bas": [0.01, 0.038],
+        "IC95_Haut": [0.87, 0.668],
+        "PValeur": [0.047, 0.029],
+        "NbAnnees": [26, 26],
+    })
+    sql = build_anomaly_sql(annual, trends, years=(2000,))
+
+    assert sql.startswith("USE TemperatureDB;")
+    assert sql.index("DELETE FROM TemperatureTendance") < sql.index("INSERT INTO TemperatureAnomalie")
+    assert "SELECT p.ProvinceID, a.AnneeID, 0.425, 0.485, 4.883, 59.3 FROM Province p, Annee a" in sql
+    assert "SELECT NULL, a.AnneeID, -0.465, NULL, 1.815, NULL FROM Annee a WHERE a.ValeurAnnee = 2000;" in sql
+    assert "SELECT p.ProvinceID, 'anomalie_stations_longues', 0.4400, 0.0100, 0.8700, 0.047000, 26 FROM Province p" in sql
+    assert "SELECT NULL, 'anomalie_stations_longues', 0.3530, 0.0380, 0.6680, 0.029000, 26 ;" in sql

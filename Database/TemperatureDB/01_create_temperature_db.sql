@@ -59,3 +59,35 @@ IF OBJECT_ID('dbo.Temperature', 'U') IS NULL
         CONSTRAINT UQ_Temperature_Province_Annee UNIQUE (ProvinceID, AnneeID)
     );
 GO
+
+/* Anomalies annuelles par station (voir Data/README.md). ProvinceID NULL = Canada (moyenne des provinces).
+   Anomalie = ecart a la moyenne de chaque station pour le meme mois, puis moyenne par province. */
+IF OBJECT_ID('dbo.TemperatureAnomalie', 'U') IS NULL
+    CREATE TABLE dbo.TemperatureAnomalie
+    (
+        AnomalieID              INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TemperatureAnomalie PRIMARY KEY,
+        ProvinceID              INT NULL CONSTRAINT FK_TemperatureAnomalie_Province REFERENCES dbo.Province(ProvinceID),
+        AnneeID                 INT NOT NULL CONSTRAINT FK_TemperatureAnomalie_Annee REFERENCES dbo.Annee(AnneeID),
+        AnomalieStationsLongues DECIMAL(6,3) NULL,
+        AnomalieToutesStations  DECIMAL(6,3) NULL,
+        MoyenneSimple           DECIMAL(6,3) NULL,
+        NbStationsLongues       DECIMAL(7,1) NULL,
+        CONSTRAINT UQ_TemperatureAnomalie_Province_Annee UNIQUE (ProvinceID, AnneeID)
+    );
+GO
+
+/* Tendance lineaire 2000-2025 par province et par methode (pente en degres C par decennie, IC a 95 %). */
+IF OBJECT_ID('dbo.TemperatureTendance', 'U') IS NULL
+    CREATE TABLE dbo.TemperatureTendance
+    (
+        TendanceID       INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TemperatureTendance PRIMARY KEY,
+        ProvinceID       INT NULL CONSTRAINT FK_TemperatureTendance_Province REFERENCES dbo.Province(ProvinceID),
+        Methode          NVARCHAR(40) NOT NULL,
+        PenteParDecennie DECIMAL(7,4) NULL,
+        IC95_Bas         DECIMAL(7,4) NULL,
+        IC95_Haut        DECIMAL(7,4) NULL,
+        PValeur          DECIMAL(9,6) NULL,
+        NbAnnees         INT NOT NULL,
+        CONSTRAINT UQ_TemperatureTendance_Province_Methode UNIQUE (ProvinceID, Methode)
+    );
+GO

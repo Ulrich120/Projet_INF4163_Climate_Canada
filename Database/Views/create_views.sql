@@ -18,6 +18,39 @@ INNER JOIN dbo.Annee a ON t.AnneeID = a.AnneeID;
 GO
 
 
+/* Anomalies par station : c'est la serie a utiliser pour une tendance (la moyenne simple de
+   vw_Temperature n'est pas comparable d'une annee a l'autre). ProvinceID NULL = Canada. */
+CREATE OR ALTER VIEW dbo.vw_TemperatureAnomalie AS
+SELECT
+    t.ProvinceID,
+    ISNULL(p.CodeProvince, 'CA') AS CodeProvince,
+    ISNULL(p.NomProvince, N'Canada (moyenne des provinces)') AS NomProvince,
+    a.AnneeID,
+    a.ValeurAnnee AS Annee,
+    t.AnomalieStationsLongues,
+    t.AnomalieToutesStations,
+    t.MoyenneSimple
+FROM dbo.TemperatureAnomalie t
+LEFT JOIN dbo.Province p ON t.ProvinceID = p.ProvinceID
+INNER JOIN dbo.Annee a ON t.AnneeID = a.AnneeID;
+GO
+
+CREATE OR ALTER VIEW dbo.vw_TemperatureTendance AS
+SELECT
+    t.ProvinceID,
+    ISNULL(p.CodeProvince, 'CA') AS CodeProvince,
+    ISNULL(p.NomProvince, N'Canada (moyenne des provinces)') AS NomProvince,
+    t.Methode,
+    t.PenteParDecennie,
+    t.IC95_Bas,
+    t.IC95_Haut,
+    t.PValeur,
+    t.NbAnnees
+FROM dbo.TemperatureTendance t
+LEFT JOIN dbo.Province p ON t.ProvinceID = p.ProvinceID;
+GO
+
+
 USE PrecipitationDB;
 GO
 
