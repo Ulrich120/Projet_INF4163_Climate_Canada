@@ -48,6 +48,28 @@ Les anomalies et tendances sont chargées dans les tables `TemperatureAnomalie` 
 - Prises une par une, seules 5 provinces sur 13 ont un intervalle qui exclut zéro (Colombie-Britannique, Nouvelle-Écosse, Territoires du Nord-Ouest, Île-du-Prince-Édouard, Québec) : 26 années, c'est court, et la variabilité d'une année à l'autre est grande.
 - Le saut de 2018 au Québec est en partie réel : l'anomalie des stations longues baisse de 0,44 °C cette année-là (0,72 °C avec toutes les stations), contre 1,75 °C pour la moyenne simple. Le reste de la chute vient du réseau.
 
+## Tendance de précipitations
+
+Le même problème de réseau touche les précipitations, en plus pénible : le total mensuel d'une station est une **somme**, donc des jours manquants le sous-estiment. ECCC publie quand même le total : 32 % des relevés ont au moins un jour manquant et 11 % en ont plus de 5. Surtout, la part de relevés avec plus de 5 jours manquants passe de 4,1 % en 2006 à 16,9 % en 2008 (puis 12,7 % en 2025), une rupture de qualité qui tire les totaux non filtrés vers le bas après 2008.
+
+Méthode (`ETL/station_anomalies.py precipitation`) : même principe que pour la température, avec trois différences.
+
+1. Les relevés avec plus de 5 jours manquants sont écartés (`MAX_MISSING_DAYS`).
+2. L'anomalie est exprimée en **% de la normale** de la station : 100 × somme des écarts / somme des normales, sur les relevés disponibles. C'est stable pour les mois très secs de l'Arctique et comparable entre une province très humide et une province très sèche, ce que des millimètres ne permettraient pas.
+3. Le seuil de 5 jours est un choix : la sensibilité à ce seuil est calculée et enregistrée dans `Data/Processed/Precipitation/precipitation_sensitivity.csv`.
+
+**Validation.** Sur un réseau synthétique à climat stable où des stations très humides ferment, la somme simple invente −347 mm par décennie et l'anomalie en % retrouve 0,0. Avec une hausse connue de 1 % par an (8,9 % par décennie par rapport à la moyenne de la période), elle retrouve 8,9 (6,1 avec toutes les stations). Ces cas sont dans `tests/etl/test_station_anomalies.py`.
+
+Les anomalies et tendances sont chargées dans `PrecipitationAnomalie` et `PrecipitationTendance` de `PrecipitationDB`, exposées par `/api/precipitation/anomalies` et `/api/precipitation/trends`.
+
+**Résultats sur 2000-2025** (`precipitation_trends.csv`, figure `docs/figures/tendances_precipitations.png`) :
+
+- **Cumul simple : une baisse nationale « significative » qui n'existe pas.** Il passe de 792 mm en 2000 à 618 mm en 2025, soit −37,9 mm par décennie (intervalle à 95 % de −59,2 à −16,5). C'est un artefact du réseau.
+- **Anomalies par stations longues : aucune tendance détectable.** Canada : **−0,9 % de la normale par décennie, intervalle de −4,4 à +2,5**. Aucune des 12 provinces et territoires évaluables n'a un intervalle qui exclut zéro.
+- Selon le seuil de jours manquants (0, 2, 5, 10 jours, ou aucun filtre), la pente nationale varie de −0,1 à −1,6 % par décennie et son intervalle contient toujours zéro.
+- **Le Yukon n'a aucune station de longue durée** utilisable : pas de tendance (valeur vide). Le Nunavut en a 3 et les Territoires du Nord-Ouest 5 : leurs résultats sont fragiles.
+- Ne pas conclure à une absence de changement : un intervalle de −4,4 à +2,5 % par décennie n'exclut pas des variations de quelques pour cent dans un sens ou dans l'autre.
+
 ## Limites connues
 
 - Les intervalles de confiance supposent des années indépendantes ; l'autocorrélation les rend probablement un peu trop optimistes.
@@ -55,4 +77,5 @@ Les anomalies et tendances sont chargées dans les tables `TemperatureAnomalie` 
 - Les anomalies sont calculées par rapport à la moyenne de la station sur 2000-2025, pas par rapport à une normale de référence de 30 ans.
 - Les données ne sont pas homogénéisées : un déplacement de station ou un changement d'instrument n'est pas corrigé.
 - Dans une province, la moyenne est celle des stations, pas une moyenne pondérée par la surface : une province très instrumentée dans sa partie sud est dominée par cette partie.
-- Les précipitations annuelles (somme des moyennes mensuelles des stations) souffrent du même effet de réseau ; l'analyse par stations n'a été faite que pour la température.
+- Les valeurs « simples » stockées dans les tables `Temperature` et `Precipitation` (moyenne et cumul des stations actives) sont conservées telles quelles : elles décrivent les stations actives chaque année, pas une tendance.
+- Les précipitations solides (neige) dépendent du type de pluviomètre ; je n'ai pas évalué ce biais.

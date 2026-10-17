@@ -42,11 +42,35 @@ Tendance Significative =
 IF([Tendance IC Bas] > 0 || [Tendance IC Haut] < 0, "Significative", "Non concluante")
 
 
--- === Précipitations (table vw_Precipitation) ===
+-- === Précipitations ===
+-- ATTENTION : le cumul simple (vw_Precipitation) additionne les stations actives une année donnée.
+-- Le réseau change et la part de relevés incomplets a bondi en 2008 : il n'est PAS comparable d'une
+-- année à l'autre. Pour une tendance, utiliser les anomalies en % de la normale (vw_PrecipitationAnomalie).
 
-Precipitation Totale = SUM(vw_Precipitation[PrecipitationAnnuelle])
+Precipitation Observee = SUM(vw_Precipitation[PrecipitationAnnuelle])
 
 Precipitation Moyenne Provinciale = AVERAGE(vw_Precipitation[PrecipitationAnnuelle])
+
+Anomalie Precipitation Pct = AVERAGE(vw_PrecipitationAnomalie[AnomalieStationsLongues])
+
+-- Tendance en % de la normale par décennie (vide pour le Yukon : aucune station de longue durée).
+Tendance Precipitation Pct Par Decennie =
+CALCULATE(
+    MAX(vw_PrecipitationTendance[PenteParDecennie]),
+    vw_PrecipitationTendance[Methode] = "anomalie_stations_longues"
+)
+
+Tendance Precipitation IC Bas =
+CALCULATE(
+    MAX(vw_PrecipitationTendance[IC95_Bas]),
+    vw_PrecipitationTendance[Methode] = "anomalie_stations_longues"
+)
+
+Tendance Precipitation IC Haut =
+CALCULATE(
+    MAX(vw_PrecipitationTendance[IC95_Haut]),
+    vw_PrecipitationTendance[Methode] = "anomalie_stations_longues"
+)
 
 
 -- === Pollution (table vw_Pollution) ===

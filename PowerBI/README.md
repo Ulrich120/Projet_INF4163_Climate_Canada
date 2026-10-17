@@ -9,7 +9,7 @@ Il n'y a volontairement pas de fichier `.pbix` versionné ici : ce format est un
 
 ## 1. Créer les vues côté SQL Server
 
-Avant d'ouvrir Power BI, exécute `Database/Views/create_views.sql` dans SSMS. Ça crée une vue par base (`vw_Temperature`, `vw_Precipitation`, `vw_Pollution`), plus `vw_TemperatureAnomalie` et `vw_TemperatureTendance` pour la température, qui incluent déjà le nom de la province et l'année en clair — évite de refaire les jointures dans Power Query.
+Avant d'ouvrir Power BI, exécute `Database/Views/create_views.sql` dans SSMS. Ça crée une vue par base (`vw_Temperature`, `vw_Precipitation`, `vw_Pollution`), plus `vw_TemperatureAnomalie`, `vw_TemperatureTendance`, `vw_PrecipitationAnomalie` et `vw_PrecipitationTendance` pour les tendances, qui incluent déjà le nom de la province et l'année en clair — évite de refaire les jointures dans Power Query.
 
 ## 2. Se connecter depuis Power BI Desktop
 
@@ -20,7 +20,7 @@ Pour chacune des trois bases :
 3. Mode de connectivité : **Import** (les données ne bougent pas assez souvent pour justifier du DirectQuery, et Import donne de meilleures performances pour les visuels)
 4. Sélectionner la base correspondante, puis cocher :
    - `vw_Temperature`, `vw_TemperatureAnomalie` et `vw_TemperatureTendance` (dans TemperatureDB)
-   - `vw_Precipitation` (dans PrecipitationDB)
+   - `vw_Precipitation`, `vw_PrecipitationAnomalie` et `vw_PrecipitationTendance` (dans PrecipitationDB)
    - `vw_Pollution` (dans PollutionDB)
    - `Province` et `Annee` (une seule fois, depuis TemperatureDB — voir étape 3)
 
@@ -48,8 +48,8 @@ Suggestions de base pour un premier rapport :
 - Carte du Canada colorée par province (température moyenne, précipitations ou émissions selon la page)
 - Courbe d'évolution 2000-2025 par province sélectionnée (slicer sur `Province[CodeProvince]`)
 - Graphique en barres pour comparer les 13 provinces sur une année donnée
-- Cartes KPI utilisant les mesures `Anomalie Moyenne`, `Tendance Par Decennie`, `Precipitation Totale`, `Emissions Moyennes`
-- Pour une tendance de température, utiliser les anomalies (`vw_TemperatureAnomalie`) et jamais `Temperature Observee` : le réseau de stations change au fil des ans (voir `Data/README.md`)
+- Cartes KPI utilisant les mesures `Anomalie Moyenne`, `Tendance Par Decennie`, `Tendance Precipitation Pct Par Decennie`, `Emissions Moyennes`
+- Pour une tendance, utiliser les anomalies (`vw_TemperatureAnomalie`, `vw_PrecipitationAnomalie`) et jamais `Temperature Observee` ni `Precipitation Observee` : le réseau de stations change au fil des ans (voir `Data/README.md`)
 
 ## Pourquoi Power BI en plus du dashboard React
 
