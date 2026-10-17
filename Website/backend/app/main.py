@@ -89,6 +89,48 @@ def get_temperature():
         raise HTTPException(status_code=500, detail=str(error))
 
 
+@app.get("/api/temperature/anomalies")
+def get_temperature_anomalies():
+    # province "CA" = Canada (moyenne des provinces). L'anomalie compare chaque station à sa propre
+    # moyenne : c'est la série à utiliser pour une tendance, pas la moyenne simple de /api/temperature.
+    query = """
+        SELECT
+            CodeProvince AS province,
+            NomProvince AS nomProvince,
+            Annee AS annee,
+            AnomalieStationsLongues AS anomalie,
+            AnomalieToutesStations AS anomalieToutesStations,
+            MoyenneSimple AS moyenneSimple
+        FROM dbo.vw_TemperatureAnomalie
+        ORDER BY CodeProvince, Annee;
+    """
+    try:
+        return execute_query("TemperatureDB", query)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+
+@app.get("/api/temperature/trends")
+def get_temperature_trends():
+    query = """
+        SELECT
+            CodeProvince AS province,
+            NomProvince AS nomProvince,
+            Methode AS methode,
+            PenteParDecennie AS pente,
+            IC95_Bas AS icBas,
+            IC95_Haut AS icHaut,
+            PValeur AS pValeur,
+            NbAnnees AS nbAnnees
+        FROM dbo.vw_TemperatureTendance
+        ORDER BY CodeProvince, Methode;
+    """
+    try:
+        return execute_query("TemperatureDB", query)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+
 @app.get("/api/results/temperature")
 def get_temperature_results():
     try:
