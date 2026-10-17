@@ -1,18 +1,45 @@
 -- Mesures suggérées pour le modèle Power BI.
 -- À coller une par une dans "Nouvelle mesure" sur la table concernée.
 
--- === Température (table vw_Temperature) ===
+-- === Température ===
+-- ATTENTION : la moyenne simple (vw_Temperature) décrit les stations actives une année donnée.
+-- Le réseau de stations change, donc elle n'est PAS comparable d'une année à l'autre :
+-- ne pas l'utiliser pour une variation ou une tendance. Utiliser les anomalies (vw_TemperatureAnomalie).
 
-Temperature Moyenne = AVERAGE(vw_Temperature[TemperatureMoyenne])
+Temperature Observee = AVERAGE(vw_Temperature[TemperatureMoyenne])
 
-Temperature Annee Precedente =
+Anomalie Moyenne = AVERAGE(vw_TemperatureAnomalie[AnomalieStationsLongues])
+
+Anomalie Annee Precedente =
 CALCULATE(
-    [Temperature Moyenne],
+    [Anomalie Moyenne],
     FILTER(ALL(Annee), Annee[ValeurAnnee] = MAX(Annee[ValeurAnnee]) - 1)
 )
 
-Variation Temperature =
-[Temperature Moyenne] - [Temperature Annee Precedente]
+Variation Anomalie = [Anomalie Moyenne] - [Anomalie Annee Precedente]
+
+-- Tendance 2000-2025 (°C par décennie) et son intervalle de confiance à 95 %.
+-- Filtrer sur une province (ou CA = Canada) avec un segment sur vw_TemperatureTendance[CodeProvince].
+Tendance Par Decennie =
+CALCULATE(
+    MAX(vw_TemperatureTendance[PenteParDecennie]),
+    vw_TemperatureTendance[Methode] = "anomalie_stations_longues"
+)
+
+Tendance IC Bas =
+CALCULATE(
+    MAX(vw_TemperatureTendance[IC95_Bas]),
+    vw_TemperatureTendance[Methode] = "anomalie_stations_longues"
+)
+
+Tendance IC Haut =
+CALCULATE(
+    MAX(vw_TemperatureTendance[IC95_Haut]),
+    vw_TemperatureTendance[Methode] = "anomalie_stations_longues"
+)
+
+Tendance Significative =
+IF([Tendance IC Bas] > 0 || [Tendance IC Haut] < 0, "Significative", "Non concluante")
 
 
 -- === Précipitations (table vw_Precipitation) ===

@@ -4,7 +4,7 @@ Interface React du projet, construite avec Vite. Voir le [README principal](../.
 
 ## Lancer en local
 
-Le backend FastAPI doit tourner sur `http://127.0.0.1:8000` (voir `Website/backend/`).
+Le backend FastAPI doit tourner sur `http://127.0.0.1:8000` (voir `Website/backend/`). Pour une autre adresse ou un autre port, définir `VITE_API_URL` (voir `.env.example`).
 
 ```bash
 npm install

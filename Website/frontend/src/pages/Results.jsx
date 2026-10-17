@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/api";
+import { signed } from "../utils/series";
 
 function Results() {
   const [temperature, setTemperature] = useState(null);
@@ -102,6 +103,14 @@ function Results() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
+      <div className="alert alert-warning border-0 shadow-sm">
+        <i className="bi bi-exclamation-triangle-fill me-2"></i>
+        Les classements d'années en précipitations reposent sur la moyenne des
+        stations actives, non corrigée de l'évolution du réseau : ils ne
+        mesurent pas une tendance. Pour la température, le classement des années
+        utilise l'anomalie nationale.
+      </div>
+
       {/* Température */}
 
       <div className="section-card mb-4">
@@ -118,7 +127,7 @@ function Results() {
                 title="Année la plus chaude"
                 mainValue={hottestYear?.Annee}
                 secondaryValue={
-                  hottestYear ? `${hottestYear.TemperatureMoyenne} °C` : "--"
+                  hottestYear ? `${signed(hottestYear.AnomalieMoyenne)} °C (anomalie nationale)` : "--"
                 }
                 type="hot"
               />
@@ -130,7 +139,7 @@ function Results() {
                 title="Année la moins chaude"
                 mainValue={coldestYear?.Annee}
                 secondaryValue={
-                  coldestYear ? `${coldestYear.TemperatureMoyenne} °C` : "--"
+                  coldestYear ? `${signed(coldestYear.AnomalieMoyenne)} °C (anomalie nationale)` : "--"
                 }
                 type="cold"
               />

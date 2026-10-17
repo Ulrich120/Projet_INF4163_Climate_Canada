@@ -12,12 +12,13 @@ import { Line } from "react-chartjs-2";
 
 import api from "../api/api";
 import CanadaMap from "../components/map/CanadaMap";
-import { lastWithData, toNumber } from "../utils/series";
+import { lastWithData, signed, toNumber, trendLine, trendVerdict } from "../utils/series";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 function Home() {
   const [temperature, setTemperature] = useState([]);
+  const [trends, setTrends] = useState([]);
   const [precipitation, setPrecipitation] = useState([]);
   const [pollution, setPollution] = useState([]);
   const [selectedProvince, setSelectedProvince] = useState("QC");
@@ -27,14 +28,20 @@ function Home() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [temperatureResponse, precipitationResponse, pollutionResponse] =
-          await Promise.all([
-            api.get("/api/temperature"),
-            api.get("/api/precipitation"),
-            api.get("/api/pollution"),
-          ]);
+        const [
+          temperatureResponse,
+          trendResponse,
+          precipitationResponse,
+          pollutionResponse,
+        ] = await Promise.all([
+          api.get("/api/temperature/anomalies"),
+          api.get("/api/temperature/trends"),
+          api.get("/api/precipitation"),
+          api.get("/api/pollution"),
+        ]);
 
         setTemperature(temperatureResponse.data);
+        setTrends(trendResponse.data);
         setPrecipitation(precipitationResponse.data);
         setPollution(pollutionResponse.data);
       } catch (err) {
@@ -74,25 +81,34 @@ function Home() {
 
   const provinceName = temperatureProvince[0]?.nomProvince || selectedProvince;
 
-  const latestTemperature = lastWithData(temperatureProvince, "temperature");
+  const temperatureTrend = trends.find(
+    (item) => item.province === selectedProvince && item.methode === "anomalie_stations_longues",
+  );
+  const temperatureVerdict = trendVerdict(temperatureTrend);
   const latestPrecipitation = lastWithData(precipitationProvince, "precipitation");
   const latestPollution = lastWithData(pollutionProvince, "emission");
-
-  const temperatureTrend = temperatureProvince.map((item) => toNumber(item.temperature));
 
   const chartData = {
     labels: temperatureProvince.map((item) => item.annee),
     datasets: [
       {
-        label: `Température — ${selectedProvince}`,
-        data: temperatureTrend,
+        label: `Anomalie — ${selectedProvince}`,
+        data: temperatureProvince.map((item) => toNumber(item.anomalie)),
         borderColor: "#2563eb",
         backgroundColor: "rgba(37,99,235,0.12)",
         pointBackgroundColor: "#ffffff",
         pointBorderColor: "#2563eb",
-        pointBorderWidth: 3,
-        pointRadius: 6,
-        tension: 0.35,
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        tension: 0.25,
+      },
+      {
+        label: "Tendance",
+        data: trendLine(temperatureProvince, "anomalie"),
+        borderColor: "#0f172a",
+        borderDash: [6, 4],
+        borderWidth: 2,
+        pointRadius: 0,
       },
     ],
   };
@@ -152,12 +168,12 @@ function Home() {
         <div className="col-md-6 col-xl-3">
           <DashboardKPI
             icon="bi-thermometer-high"
-            label="Température"
-            value={latestTemperature ? latestTemperature.value.toFixed(2) : "--"}
-            unit="°C"
+            label="Tendance température"
+            value={signed(temperatureTrend?.pente)}
+            unit="°C / décennie"
             color="#dc2626"
             background="#fff1f2"
-            note={latestTemperature ? String(latestTemperature.annee) : ""}
+            note={temperatureVerdict ? `${temperatureVerdict.label} · ${temperatureVerdict.interval}` : ""}
           />
         </div>
 
@@ -223,7 +239,7 @@ function Home() {
           <div className="section-card h-100">
             <div className="section-header rain">
               <i className="bi bi-graph-up-arrow me-2"></i>
-              Évolution de la température
+              Anomalie de température
             </div>
 
             <div className="p-4" style={{ height: "440px" }}>
@@ -238,7 +254,7 @@ function Home() {
           <QuickModule
             icon="bi-thermometer-high"
             title="Température"
-            text="Analyse des températures annuelles moyennes, année par année."
+            text="Anomalies et tendance de température, comparées station par station."
             href="/temperature"
             color="#dc2626"
           />

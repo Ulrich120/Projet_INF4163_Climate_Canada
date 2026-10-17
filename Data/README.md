@@ -38,6 +38,8 @@ La méthode retenue (`ETL/station_anomalies.py`) compare chaque station à sa pr
 
 **Validation.** Sur un réseau synthétique à climat stable où des stations chaudes ferment en cours de période, la moyenne simple invente −5,2 °C par décennie, la méthode par stations longues retrouve 0,0. Avec un vrai réchauffement de 0,4 °C par décennie, elle retrouve 0,4 (0,32 avec toutes les stations). Ces cas sont dans `tests/etl/test_station_anomalies.py`.
 
+Les anomalies et tendances sont chargées dans les tables `TemperatureAnomalie` et `TemperatureTendance` de `TemperatureDB` (`ProvinceID` à `NULL` = Canada), exposées par l'API (`/api/temperature/anomalies` et `/api/temperature/trends`) et utilisées par la page Températures du frontend.
+
 **Résultats sur 2000-2025** (`temperature_trends.csv`, figure dans `docs/figures/`) :
 
 - Moyenne simple : cinq provinces affichent un refroidissement (Québec −0,74, Ontario −0,20, Manitoba −0,07, Saskatchewan −0,06, Terre-Neuve-et-Labrador −0,02 °C par décennie).

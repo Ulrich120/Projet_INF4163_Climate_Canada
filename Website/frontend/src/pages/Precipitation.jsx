@@ -220,6 +220,14 @@ function Precipitation() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
+      <div className="alert alert-warning border-0 shadow-sm">
+        <i className="bi bi-exclamation-triangle-fill me-2"></i>
+        Ces valeurs sont des moyennes de stations actives, et le réseau de
+        stations change d'une année à l'autre : les variations affichées ne
+        mesurent pas une tendance. La correction par station, déjà appliquée aux
+        températures, n'a pas encore été faite pour les précipitations.
+      </div>
+
       <div className="row g-4 mb-4">
         <div className="col-md-4">
           <div className="card kpi-card rain">

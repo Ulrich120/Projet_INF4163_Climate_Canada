@@ -86,6 +86,8 @@ En comparant chaque station à sa propre moyenne (`ETL/station_anomalies.py`) :
 - pour le Canada (provinces à poids égaux) : **+0,35 °C par décennie, intervalle de confiance à 95 % de 0,04 à 0,67** ;
 - l'incertitude reste large : sur 26 ans, seules 5 provinces sur 13 ont un intervalle qui exclut zéro.
 
+La page Températures de l'interface affiche ces anomalies et ces tendances (avec leur intervalle de confiance) plutôt que la moyenne simple. Les précipitations n'ont pas encore reçu cette correction : la page le signale.
+
 La méthode est validée sur un réseau synthétique dont on connaît la bonne réponse (tests dans `tests/etl/`). Méthode complète et limites : [`Data/README.md`](Data/README.md).
 
 ## Power BI
@@ -154,12 +156,10 @@ python ETL/download_climate_summaries.py    # reprend là où il s'est arrêté 
 python ETL/aggregate_temperature.py
 python ETL/aggregate_precipitation.py
 python ETL/aggregate_pollution.py
-python ETL/generate_sql.py                   # réécrit Database/*/02_insert_*.sql
-
-# analyse de tendance par stations (optionnel)
 python ETL/build_station_table.py            # ~3 min, produit Data/Interim/stations_monthly.csv.gz
 python ETL/station_anomalies.py              # anomalies et tendances -> Data/Processed/Temperature/
 python ETL/plot_trends.py                    # figure -> docs/figures/
+python ETL/generate_sql.py                   # réécrit Database/*/02_insert_*.sql et 03_insert_temperature_anomalies.sql
 ```
 
 La période se règle dans `ETL/config.py` (`START_YEAR`, `END_YEAR`).
