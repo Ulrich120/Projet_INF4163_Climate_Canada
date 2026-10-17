@@ -105,10 +105,10 @@ function Results() {
 
       <div className="alert alert-warning border-0 shadow-sm">
         <i className="bi bi-exclamation-triangle-fill me-2"></i>
-        Les classements d'années en précipitations reposent sur la moyenne des
-        stations actives, non corrigée de l'évolution du réseau : ils ne
-        mesurent pas une tendance. Pour la température, le classement des années
-        utilise l'anomalie nationale.
+        Le réseau de stations change d'une année à l'autre : les classements
+        d'années, en température comme en précipitations, utilisent l'anomalie
+        nationale (chaque station comparée à sa propre moyenne) plutôt que la
+        moyenne simple des stations actives.
       </div>
 
       {/* Température */}
@@ -193,7 +193,7 @@ function Results() {
                 mainValue={wettestYear?.Annee}
                 secondaryValue={
                   wettestYear
-                    ? `${wettestYear.PrecipitationMoyenne_mm} mm`
+                    ? `${signed(wettestYear.AnomalieMoyenne_pct, 1)} % (anomalie nationale)`
                     : "--"
                 }
                 type="rain"
@@ -206,7 +206,7 @@ function Results() {
                 title="Année la moins pluvieuse"
                 mainValue={driestYear?.Annee}
                 secondaryValue={
-                  driestYear ? `${driestYear.PrecipitationMoyenne_mm} mm` : "--"
+                  driestYear ? `${signed(driestYear.AnomalieMoyenne_pct, 1)} % (anomalie nationale)` : "--"
                 }
                 type="dry"
               />

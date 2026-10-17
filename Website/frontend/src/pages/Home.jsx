@@ -19,7 +19,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip,
 function Home() {
   const [temperature, setTemperature] = useState([]);
   const [trends, setTrends] = useState([]);
-  const [precipitation, setPrecipitation] = useState([]);
+  const [precipitationTrends, setPrecipitationTrends] = useState([]);
   const [pollution, setPollution] = useState([]);
   const [selectedProvince, setSelectedProvince] = useState("QC");
   const [loading, setLoading] = useState(true);
@@ -36,13 +36,13 @@ function Home() {
         ] = await Promise.all([
           api.get("/api/temperature/anomalies"),
           api.get("/api/temperature/trends"),
-          api.get("/api/precipitation"),
+          api.get("/api/precipitation/trends"),
           api.get("/api/pollution"),
         ]);
 
         setTemperature(temperatureResponse.data);
         setTrends(trendResponse.data);
-        setPrecipitation(precipitationResponse.data);
+        setPrecipitationTrends(precipitationResponse.data);
         setPollution(pollutionResponse.data);
       } catch (err) {
         console.error(err);
@@ -63,14 +63,6 @@ function Home() {
     [temperature, selectedProvince],
   );
 
-  const precipitationProvince = useMemo(
-    () =>
-      precipitation
-        .filter((item) => item.province === selectedProvince)
-        .sort((a, b) => a.annee - b.annee),
-    [precipitation, selectedProvince],
-  );
-
   const pollutionProvince = useMemo(
     () =>
       pollution
@@ -85,7 +77,10 @@ function Home() {
     (item) => item.province === selectedProvince && item.methode === "anomalie_stations_longues",
   );
   const temperatureVerdict = trendVerdict(temperatureTrend);
-  const latestPrecipitation = lastWithData(precipitationProvince, "precipitation");
+  const precipitationTrend = precipitationTrends.find(
+    (item) => item.province === selectedProvince && item.methode === "anomalie_stations_longues",
+  );
+  const precipitationVerdict = trendVerdict(precipitationTrend, 1);
   const latestPollution = lastWithData(pollutionProvince, "emission");
 
   const chartData = {
@@ -180,12 +175,12 @@ function Home() {
         <div className="col-md-6 col-xl-3">
           <DashboardKPI
             icon="bi-cloud-rain-heavy"
-            label="Précipitations"
-            value={latestPrecipitation ? latestPrecipitation.value.toFixed(2) : "--"}
-            unit="mm"
+            label="Tendance précipitations"
+            value={signed(precipitationTrend?.pente, 1)}
+            unit="% / décennie"
             color="#0284c7"
             background="#eff6ff"
-            note={latestPrecipitation ? String(latestPrecipitation.annee) : ""}
+            note={precipitationVerdict ? `${precipitationVerdict.label} · ${precipitationVerdict.interval}` : "Pas assez de stations de longue durée"}
           />
         </div>
 
@@ -264,7 +259,7 @@ function Home() {
           <QuickModule
             icon="bi-cloud-rain-heavy"
             title="Précipitations"
-            text="Analyse des précipitations annuelles par province et territoire."
+            text="Anomalies et tendance des précipitations, comparées station par station."
             href="/precipitation"
             color="#0284c7"
           />

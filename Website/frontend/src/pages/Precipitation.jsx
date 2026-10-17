@@ -6,6 +6,7 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  Title,
   Tooltip,
   Legend,
   Filler,
@@ -14,12 +15,13 @@ import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
 import {
-  firstWithData,
   lastWithData,
   mean,
-  nationalAverages,
   round2,
+  signed,
   toNumber,
+  trendLine,
+  trendVerdict,
   yearsIn,
 } from "../utils/series";
 
@@ -29,13 +31,19 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
+
+const METHOD = "anomalie_stations_longues";
+const NATIONAL = "CA";
 
 function Precipitation() {
   const [data, setData] = useState([]);
+  const [anomalies, setAnomalies] = useState([]);
+  const [trends, setTrends] = useState([]);
   const [results, setResults] = useState(null);
   const [selectedProvince, setSelectedProvince] = useState("QC");
   const [loading, setLoading] = useState(true);
@@ -44,12 +52,17 @@ function Precipitation() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [dataResponse, resultsResponse] = await Promise.all([
-          api.get("/api/precipitation"),
-          api.get("/api/results/precipitation"),
-        ]);
+        const [dataResponse, anomalyResponse, trendResponse, resultsResponse] =
+          await Promise.all([
+            api.get("/api/precipitation"),
+            api.get("/api/precipitation/anomalies"),
+            api.get("/api/precipitation/trends"),
+            api.get("/api/results/precipitation"),
+          ]);
 
         setData(dataResponse.data);
+        setAnomalies(anomalyResponse.data);
+        setTrends(trendResponse.data);
         setResults(resultsResponse.data);
       } catch (err) {
         console.error(err);
@@ -72,50 +85,89 @@ function Precipitation() {
       .sort((a, b) => a.annee - b.annee);
   }, [data, selectedProvince]);
 
-  const selectedProvinceName =
-    provinceData[0]?.nomProvince || selectedProvince;
+  const provinceAnomalies = useMemo(() => {
+    return anomalies
+      .filter((item) => item.province === selectedProvince)
+      .sort((a, b) => a.annee - b.annee);
+  }, [anomalies, selectedProvince]);
 
-  const years = useMemo(() => yearsIn(data), [data]);
+  const nationalAnomalies = useMemo(() => {
+    return anomalies
+      .filter((item) => item.province === NATIONAL)
+      .sort((a, b) => a.annee - b.annee);
+  }, [anomalies]);
+
+  const selectedProvinceName = provinceData[0]?.nomProvince || selectedProvince;
+
+  const years = useMemo(() => yearsIn(anomalies), [anomalies]);
   const periodLabel = years.length ? `${years[0]} à ${years[years.length - 1]}` : "";
 
-  const first = firstWithData(provinceData, "precipitation");
-  const latest = lastWithData(provinceData, "precipitation");
-  const periodAverage = mean(provinceData.map((item) => toNumber(item.precipitation)));
+  const latest = lastWithData(provinceAnomalies, "anomalie");
 
-  const variation =
-    first && latest && first.annee !== latest.annee
-      ? (latest.value - first.value).toFixed(2)
-      : "--";
+  const provinceTrend = trends.find(
+    (item) => item.province === selectedProvince && item.methode === METHOD,
+  );
+  const nationalTrend = trends.find(
+    (item) => item.province === NATIONAL && item.methode === METHOD,
+  );
+  const provinceVerdict = trendVerdict(provinceTrend, 1);
+  const nationalVerdict = trendVerdict(nationalTrend, 1);
 
-  const annualAverages = useMemo(() => nationalAverages(data, "precipitation"), [data]);
+  // cumul simple (mm) ramené en % de sa propre moyenne pour le comparer à l'anomalie sur le même axe
+  const observed = provinceAnomalies.map((item) => toNumber(item.moyenneSimple));
+  const observedMean = mean(observed);
+
+  // sans anomalie (province sans station de longue durée), la seule courbe restante serait trompeuse
+  const naiveDataset = {
+    label: "Cumul simple des stations (en % de sa moyenne, non fiable)",
+    data: observed.map((value) =>
+      value === null ? null : round2((value / observedMean - 1) * 100),
+    ),
+    borderColor: "rgba(220, 38, 38, 0.55)",
+    borderDash: [2, 3],
+    borderWidth: 1.5,
+    pointRadius: 0,
+  };
 
   const lineChartData = {
-    labels: provinceData.map((item) => item.annee),
+    labels: provinceAnomalies.map((item) => item.annee),
     datasets: [
       {
-        label: `Précipitations — ${selectedProvince}`,
-        data: provinceData.map((item) => toNumber(item.precipitation)),
+        label: `Anomalie — ${selectedProvince}`,
+        data: provinceAnomalies.map((item) => toNumber(item.anomalie)),
         spanGaps: false,
-        borderColor: "#0ea5e9",
+        borderColor: "#0284c7",
         backgroundColor: "rgba(14, 165, 233, 0.16)",
         pointBackgroundColor: "#ffffff",
         pointBorderColor: "#0284c7",
-        pointBorderWidth: 3,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        fill: true,
-        tension: 0.35,
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        tension: 0.25,
       },
+      {
+        label: "Tendance",
+        data: trendLine(provinceAnomalies, "anomalie"),
+        borderColor: "#0f172a",
+        borderDash: [6, 4],
+        borderWidth: 2,
+        pointRadius: 0,
+      },
+      ...(latest ? [naiveDataset] : []),
     ],
   };
 
   const annualChartData = {
-    labels: annualAverages.map((item) => item.year),
+    labels: nationalAnomalies.map((item) => item.annee),
     datasets: [
       {
-        label: "Précipitations moyennes nationales",
-        data: annualAverages.map((item) => round2(item.average)),
-        backgroundColor: "rgba(14,165,233,0.72)",
+        label: "Anomalie nationale (moyenne des provinces)",
+        data: nationalAnomalies.map((item) => toNumber(item.anomalie)),
+        backgroundColor: nationalAnomalies.map((item) =>
+          toNumber(item.anomalie) >= 0
+            ? "rgba(14, 165, 233, 0.75)"
+            : "rgba(234, 88, 12, 0.7)",
+        ),
         borderRadius: 6,
       },
     ],
@@ -144,6 +196,7 @@ function Precipitation() {
         },
       },
       y: {
+        title: { display: true, text: "Écart à la normale des stations (%)" },
         grid: {
           color: "rgba(148,163,184,0.16)",
         },
@@ -155,19 +208,19 @@ function Precipitation() {
   const provinceResults = results?.provinces?.flat() || [];
 
   const wettestYear = annualResults.find((item) =>
-    item.Resultat?.toLowerCase().includes("plus pluvieuse")
+    item.Resultat?.toLowerCase().includes("plus pluvieuse"),
   );
 
   const driestYear = annualResults.find((item) =>
-    item.Resultat?.toLowerCase().includes("moins pluvieuse")
+    item.Resultat?.toLowerCase().includes("moins pluvieuse"),
   );
 
   const wettestProvince = provinceResults.find((item) =>
-    item.Resultat?.toLowerCase().includes("plus pluvieuse")
+    item.Resultat?.toLowerCase().includes("plus pluvieuse"),
   );
 
   const driestProvince = provinceResults.find((item) =>
-    item.Resultat?.toLowerCase().includes("moins pluvieuse")
+    item.Resultat?.toLowerCase().includes("moins pluvieuse"),
   );
 
   if (loading) {
@@ -189,15 +242,11 @@ function Precipitation() {
           </h1>
 
           <p className="page-subtitle mb-0">
-            Précipitations annuelles moyennes par province et territoire —{" "}
-            {periodLabel}
+            Anomalies et tendances par province et territoire — {periodLabel}
           </p>
         </div>
 
-        <div
-          className="dashboard-card p-3"
-          style={{ minWidth: "260px" }}
-        >
+        <div className="dashboard-card p-3" style={{ minWidth: "260px" }}>
           <label className="form-label fw-semibold text-primary">
             Province / territoire
           </label>
@@ -205,9 +254,7 @@ function Precipitation() {
           <select
             className="form-select dashboard-select"
             value={selectedProvince}
-            onChange={(event) =>
-              setSelectedProvince(event.target.value)
-            }
+            onChange={(event) => setSelectedProvince(event.target.value)}
           >
             {provinces.map((province) => (
               <option key={province} value={province}>
@@ -220,12 +267,15 @@ function Precipitation() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="alert alert-warning border-0 shadow-sm">
-        <i className="bi bi-exclamation-triangle-fill me-2"></i>
-        Ces valeurs sont des moyennes de stations actives, et le réseau de
-        stations change d'une année à l'autre : les variations affichées ne
-        mesurent pas une tendance. La correction par station, déjà appliquée aux
-        températures, n'a pas encore été faite pour les précipitations.
+      <div className="alert alert-info border-0 shadow-sm">
+        <i className="bi bi-info-circle-fill me-2"></i>
+        <strong>Comment lire ces chiffres.</strong> Le réseau de stations change
+        d'une année à l'autre : le cumul simple des stations actives n'est donc
+        pas comparable dans le temps (courbe rouge pointillée). Une anomalie
+        compare chaque station à sa propre normale, en pourcentage, et c'est
+        elle qui sert à calculer la tendance. Les relevés auxquels il manque
+        plus de 5 jours sont écartés. Sur {years.length} ans, une tendance dont
+        l'intervalle de confiance à 95 % contient zéro est non concluante.
       </div>
 
       <div className="row g-4 mb-4">
@@ -239,7 +289,7 @@ function Precipitation() {
 
                 <div>
                   <div className="fw-semibold text-primary">
-                    Précipitations {latest?.annee ?? ""}
+                    Anomalie {latest?.annee ?? ""}
                   </div>
 
                   <div className="small text-muted">
@@ -247,11 +297,13 @@ function Precipitation() {
                   </div>
 
                   <div className="kpi-value mt-2 text-primary">
-                    {latest?.value.toFixed(2) ?? "--"} mm
+                    {signed(latest?.value, 1)} %
                   </div>
 
                   <div className="small text-muted mt-1">
-                    Total annuel moyen
+                    {latest
+                      ? "Écart à la normale des stations"
+                      : "Pas assez de stations de longue durée"}
                   </div>
                 </div>
               </div>
@@ -266,16 +318,15 @@ function Precipitation() {
                 <div
                   className="kpi-icon rain"
                   style={{
-                    background:
-                      "linear-gradient(135deg,#0ea5e9,#22d3ee)",
+                    background: "linear-gradient(135deg,#0ea5e9,#22d3ee)",
                   }}
                 >
-                  <i className="bi bi-droplet-half"></i>
+                  <i className="bi bi-activity"></i>
                 </div>
 
                 <div>
                   <div className="fw-semibold text-info">
-                    Moyenne {periodLabel.replace(" à ", "–")}
+                    Tendance {periodLabel.replace(" à ", "–")}
                   </div>
 
                   <div className="small text-muted">
@@ -283,11 +334,14 @@ function Precipitation() {
                   </div>
 
                   <div className="kpi-value mt-2 text-info">
-                    {periodAverage?.toFixed(2) ?? "--"} mm
+                    {signed(provinceTrend?.pente, 1)}
+                    <span className="fs-6 ms-1">% / décennie</span>
                   </div>
 
                   <div className="small text-muted mt-1">
-                    Total annuel moyen
+                    {provinceVerdict
+                      ? `${provinceVerdict.label} · ${provinceVerdict.interval}`
+                      : "Pas assez de stations de longue durée"}
                   </div>
                 </div>
               </div>
@@ -300,24 +354,27 @@ function Precipitation() {
             <div className="card-body p-4">
               <div className="d-flex align-items-center gap-3">
                 <div className="kpi-icon pollution">
-                  <i className="bi bi-arrow-left-right"></i>
+                  <i className="bi bi-globe-americas"></i>
                 </div>
 
                 <div>
                   <div className="fw-semibold text-success">
-                    Variation {first?.annee ?? ""} → {latest?.annee ?? ""}
+                    Tendance Canada*
                   </div>
 
                   <div className="small text-muted">
-                    {selectedProvince} - {selectedProvinceName}
+                    Moyenne des provinces, poids égaux
                   </div>
 
                   <div className="kpi-value mt-2 text-success">
-                    {variation} mm
+                    {signed(nationalTrend?.pente, 1)}
+                    <span className="fs-6 ms-1">% / décennie</span>
                   </div>
 
                   <div className="small text-muted mt-1">
-                    Évolution totale
+                    {nationalVerdict
+                      ? `${nationalVerdict.label} · ${nationalVerdict.interval}`
+                      : "Série trop courte"}
                   </div>
                 </div>
               </div>
@@ -331,7 +388,7 @@ function Precipitation() {
           <div className="section-card h-100">
             <div className="section-header rain">
               <i className="bi bi-graph-up me-2"></i>
-              Évolution — {selectedProvince} - {selectedProvinceName}
+              Anomalie — {selectedProvince} - {selectedProvinceName}
             </div>
 
             <div className="p-4" style={{ height: "370px" }}>
@@ -345,12 +402,11 @@ function Precipitation() {
             <div
               className="section-header"
               style={{
-                background:
-                  "linear-gradient(90deg,#0284c7,#22d3ee)",
+                background: "linear-gradient(90deg,#0284c7,#22d3ee)",
               }}
             >
               <i className="bi bi-bar-chart me-2"></i>
-              Moyenne nationale par année
+              Anomalie nationale par année
             </div>
 
             <div className="p-4" style={{ height: "370px" }}>
@@ -365,7 +421,7 @@ function Precipitation() {
           <div className="section-card h-100">
             <div className="section-header rain">
               <i className="bi bi-calendar3 me-2"></i>
-              Résultats par année
+              Résultats par année (anomalie nationale)
             </div>
 
             <div className="p-4">
@@ -380,9 +436,7 @@ function Precipitation() {
                     <div className="fw-bold text-primary">
                       {wettestYear.Annee}
                     </div>
-                    <div>
-                      {wettestYear.PrecipitationMoyenne_mm} mm
-                    </div>
+                    <div>{signed(wettestYear.AnomalieMoyenne_pct, 1)} %</div>
                   </div>
                 </div>
               )}
@@ -404,9 +458,7 @@ function Precipitation() {
                     <div className="fw-bold text-warning">
                       {driestYear.Annee}
                     </div>
-                    <div>
-                      {driestYear.PrecipitationMoyenne_mm} mm
-                    </div>
+                    <div>{signed(driestYear.AnomalieMoyenne_pct, 1)} %</div>
                   </div>
                 </div>
               )}
@@ -483,38 +535,53 @@ function Precipitation() {
                 <th>Province</th>
                 <th>Nom</th>
                 <th>Année</th>
-                <th>Précipitations</th>
+                <th>Anomalie</th>
+                <th>Cumul des stations actives</th>
               </tr>
             </thead>
 
             <tbody>
-              {provinceData.map((item, index) => (
-                <tr
-                  key={`${item.province}-${item.annee}-${index}`}
-                >
-                  <td>
-                    <span className="province-badge">
-                      {item.province}
-                    </span>
-                  </td>
+              {provinceData.map((item, index) => {
+                const anomaly = toNumber(
+                  provinceAnomalies.find((row) => row.annee === item.annee)?.anomalie,
+                );
 
-                  <td>{item.nomProvince}</td>
+                return (
+                  <tr key={`${item.province}-${item.annee}-${index}`}>
+                    <td>
+                      <span className="province-badge">{item.province}</span>
+                    </td>
 
-                  <td className="fw-semibold">
-                    {item.annee}
-                  </td>
+                    <td>{item.nomProvince}</td>
 
-                  <td className="fw-semibold text-primary">
-                    {toNumber(item.precipitation) === null ? (
-                      <span className="badge text-bg-secondary">
-                        Série incomplète
-                      </span>
-                    ) : (
-                      `${item.precipitation} mm`
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    <td className="fw-semibold">{item.annee}</td>
+
+                    <td>
+                      {anomaly === null ? (
+                        <span className="badge text-bg-secondary">
+                          Non disponible
+                        </span>
+                      ) : (
+                        <span
+                          className={
+                            anomaly < 0
+                              ? "text-warning fw-semibold"
+                              : "text-primary fw-semibold"
+                          }
+                        >
+                          {signed(anomaly, 1)} %
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="text-muted">
+                      {toNumber(item.precipitation) === null
+                        ? "Série incomplète"
+                        : `${item.precipitation} mm`}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

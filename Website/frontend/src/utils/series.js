@@ -57,7 +57,7 @@ export const trendLine = (rows, key) => {
 };
 
 // Une tendance n'est "significative" que si son intervalle de confiance à 95 % exclut zéro
-export const trendVerdict = (trend) => {
+export const trendVerdict = (trend, digits = 2) => {
   if (!trend || trend.pente === null || trend.icBas === null) return null;
   const lower = Number(trend.icBas);
   const upper = Number(trend.icHaut);
@@ -65,6 +65,6 @@ export const trendVerdict = (trend) => {
   return {
     significant,
     label: significant ? "Significative" : "Non concluante",
-    interval: `IC 95 % : ${signed(lower)} à ${signed(upper)}`,
+    interval: `IC 95 % : ${signed(lower, digits)} à ${signed(upper, digits)}`,
   };
 };
