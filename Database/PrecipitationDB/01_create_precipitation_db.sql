@@ -35,3 +35,37 @@ IF OBJECT_ID('dbo.Precipitation', 'U') IS NULL
         CONSTRAINT UQ_Precipitation_Province_Annee UNIQUE (ProvinceID, AnneeID)
     );
 GO
+
+/* Anomalies annuelles par station, en % de la normale de la station (voir Data/README.md).
+   ProvinceID NULL = Canada (moyenne des provinces). NULL = pas assez de stations de longue duree.
+   MoyenneSimple = cumul annuel simple des stations actives, en mm (non comparable dans le temps). */
+IF OBJECT_ID('dbo.PrecipitationAnomalie', 'U') IS NULL
+    CREATE TABLE dbo.PrecipitationAnomalie
+    (
+        AnomalieID              INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PrecipitationAnomalie PRIMARY KEY,
+        ProvinceID              INT NULL CONSTRAINT FK_PrecipitationAnomalie_Province REFERENCES dbo.Province(ProvinceID),
+        AnneeID                 INT NOT NULL CONSTRAINT FK_PrecipitationAnomalie_Annee REFERENCES dbo.Annee(AnneeID),
+        AnomalieStationsLongues DECIMAL(8,3) NULL,
+        AnomalieToutesStations  DECIMAL(8,3) NULL,
+        MoyenneSimple           DECIMAL(9,3) NULL,
+        NbStationsLongues       DECIMAL(7,1) NULL,
+        CONSTRAINT UQ_PrecipitationAnomalie_Province_Annee UNIQUE (ProvinceID, AnneeID)
+    );
+GO
+
+/* Tendance lineaire par province et par methode (pente en % de la normale par decennie pour les anomalies,
+   en mm par decennie pour la methode moyenne_simple, IC a 95 %). */
+IF OBJECT_ID('dbo.PrecipitationTendance', 'U') IS NULL
+    CREATE TABLE dbo.PrecipitationTendance
+    (
+        TendanceID       INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PrecipitationTendance PRIMARY KEY,
+        ProvinceID       INT NULL CONSTRAINT FK_PrecipitationTendance_Province REFERENCES dbo.Province(ProvinceID),
+        Methode          NVARCHAR(40) NOT NULL,
+        PenteParDecennie DECIMAL(8,4) NULL,
+        IC95_Bas         DECIMAL(8,4) NULL,
+        IC95_Haut        DECIMAL(8,4) NULL,
+        PValeur          DECIMAL(9,6) NULL,
+        NbAnnees         INT NOT NULL,
+        CONSTRAINT UQ_PrecipitationTendance_Province_Methode UNIQUE (ProvinceID, Methode)
+    );
+GO

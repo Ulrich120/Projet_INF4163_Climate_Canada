@@ -65,3 +65,32 @@ def test_anomaly_script_handles_the_national_row_and_missing_values():
     assert "SELECT NULL, a.AnneeID, -0.465, NULL, 1.815, NULL FROM Annee a WHERE a.ValeurAnnee = 2000;" in sql
     assert "SELECT p.ProvinceID, 'anomalie_stations_longues', 0.4400, 0.0100, 0.8700, 0.047000, 26 FROM Province p" in sql
     assert "SELECT NULL, 'anomalie_stations_longues', 0.3530, 0.0380, 0.6680, 0.029000, 26 ;" in sql
+
+
+def test_precipitation_anomaly_script_targets_its_own_database_and_tables():
+    from generate_sql import ANOMALY_DOMAINS, build_anomaly_sql
+
+    annual = pd.DataFrame({
+        "Province": ["YT"],
+        "Annee": [2000],
+        "AnomalieStationsLongues": [None],
+        "AnomalieToutesStations": [1.116],
+        "MoyenneSimple": [366.54],
+        "NbStationsLongues": [None],
+    })
+    trends = pd.DataFrame({
+        "Province": ["YT"],
+        "Methode": ["anomalie_stations_longues"],
+        "PenteParDecennie": [None],
+        "IC95_Bas": [None],
+        "IC95_Haut": [None],
+        "PValeur": [None],
+        "NbAnnees": [0],
+    })
+    sql = build_anomaly_sql(annual, trends, years=(2000,), domain=ANOMALY_DOMAINS["precipitation"])
+
+    assert sql.startswith("USE PrecipitationDB;")
+    assert "DELETE FROM PrecipitationTendance;" in sql and "DELETE FROM PrecipitationAnomalie;" in sql
+    assert "TemperatureAnomalie" not in sql
+    assert "SELECT p.ProvinceID, a.AnneeID, NULL, 1.116, 366.540, NULL FROM Province p" in sql
+    assert "SELECT p.ProvinceID, 'anomalie_stations_longues', NULL, NULL, NULL, NULL, 0 FROM Province p" in sql

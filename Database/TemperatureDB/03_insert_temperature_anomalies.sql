@@ -1,7 +1,7 @@
 USE TemperatureDB;
 GO
 
--- Anomalies de température par station et tendances, période 2000-2025
+-- Anomalies par station et tendances (temperature), période 2000-2025, unité : °C
 -- Fichier généré par ETL/generate_sql.py à partir de ETL/station_anomalies.py, ne pas modifier à la main.
 -- ProvinceID NULL = Canada (moyenne des provinces à poids égaux).
 

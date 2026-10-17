@@ -239,50 +239,35 @@ GO
 USE PrecipitationDB;
 GO
 
+/* Les annees sont classees sur l'anomalie nationale en % de la normale des stations (ecart de chaque
+   station a sa propre moyenne, puis moyenne des provinces). Le cumul simple des stations actives n'est
+   pas comparable d'une annee a l'autre : le reseau de stations change (voir Data/README.md). */
 CREATE OR ALTER PROCEDURE dbo.sp_AnneePlusMoinsPluvieuse
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    ;WITH MoyennesAnnuelles AS
-    (
-        SELECT
-            a.ValeurAnnee AS Annee,
-            AVG(CAST(pr.PrecipitationAnnuelle AS DECIMAL(12,2)))
-                AS PrecipitationMoyenne
-        FROM Precipitation pr
-        INNER JOIN Annee a
-            ON pr.AnneeID = a.AnneeID
-        GROUP BY a.ValeurAnnee
-    )
-
     SELECT TOP 1
         'Annee la plus pluvieuse' AS Resultat,
-        Annee,
-        CAST(PrecipitationMoyenne AS DECIMAL(12,2))
-            AS PrecipitationMoyenne_mm
-    FROM MoyennesAnnuelles
-    ORDER BY PrecipitationMoyenne DESC, Annee ASC;
-
-    ;WITH MoyennesAnnuelles AS
-    (
-        SELECT
-            a.ValeurAnnee AS Annee,
-            AVG(CAST(pr.PrecipitationAnnuelle AS DECIMAL(12,2)))
-                AS PrecipitationMoyenne
-        FROM Precipitation pr
-        INNER JOIN Annee a
-            ON pr.AnneeID = a.AnneeID
-        GROUP BY a.ValeurAnnee
-    )
+        a.ValeurAnnee AS Annee,
+        CAST(t.AnomalieStationsLongues AS DECIMAL(10,2)) AS AnomalieMoyenne_pct
+    FROM PrecipitationAnomalie t
+    INNER JOIN Annee a
+        ON t.AnneeID = a.AnneeID
+    WHERE t.ProvinceID IS NULL
+        AND t.AnomalieStationsLongues IS NOT NULL
+    ORDER BY t.AnomalieStationsLongues DESC, a.ValeurAnnee ASC;
 
     SELECT TOP 1
         'Annee la moins pluvieuse' AS Resultat,
-        Annee,
-        CAST(PrecipitationMoyenne AS DECIMAL(12,2))
-            AS PrecipitationMoyenne_mm
-    FROM MoyennesAnnuelles
-    ORDER BY PrecipitationMoyenne ASC, Annee ASC;
+        a.ValeurAnnee AS Annee,
+        CAST(t.AnomalieStationsLongues AS DECIMAL(10,2)) AS AnomalieMoyenne_pct
+    FROM PrecipitationAnomalie t
+    INNER JOIN Annee a
+        ON t.AnneeID = a.AnneeID
+    WHERE t.ProvinceID IS NULL
+        AND t.AnomalieStationsLongues IS NOT NULL
+    ORDER BY t.AnomalieStationsLongues ASC, a.ValeurAnnee ASC;
 END;
 GO
 

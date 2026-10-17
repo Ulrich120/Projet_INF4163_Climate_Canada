@@ -68,6 +68,39 @@ INNER JOIN dbo.Annee a ON pr.AnneeID = a.AnneeID;
 GO
 
 
+/* Anomalies en % de la normale de la station : serie a utiliser pour une tendance (le cumul simple
+   de vw_Precipitation n'est pas comparable d'une annee a l'autre). ProvinceID NULL = Canada. */
+CREATE OR ALTER VIEW dbo.vw_PrecipitationAnomalie AS
+SELECT
+    t.ProvinceID,
+    ISNULL(p.CodeProvince, 'CA') AS CodeProvince,
+    ISNULL(p.NomProvince, N'Canada (moyenne des provinces)') AS NomProvince,
+    a.AnneeID,
+    a.ValeurAnnee AS Annee,
+    t.AnomalieStationsLongues,
+    t.AnomalieToutesStations,
+    t.MoyenneSimple
+FROM dbo.PrecipitationAnomalie t
+LEFT JOIN dbo.Province p ON t.ProvinceID = p.ProvinceID
+INNER JOIN dbo.Annee a ON t.AnneeID = a.AnneeID;
+GO
+
+CREATE OR ALTER VIEW dbo.vw_PrecipitationTendance AS
+SELECT
+    t.ProvinceID,
+    ISNULL(p.CodeProvince, 'CA') AS CodeProvince,
+    ISNULL(p.NomProvince, N'Canada (moyenne des provinces)') AS NomProvince,
+    t.Methode,
+    t.PenteParDecennie,
+    t.IC95_Bas,
+    t.IC95_Haut,
+    t.PValeur,
+    t.NbAnnees
+FROM dbo.PrecipitationTendance t
+LEFT JOIN dbo.Province p ON t.ProvinceID = p.ProvinceID;
+GO
+
+
 USE PollutionDB;
 GO
 

@@ -103,6 +103,24 @@ TREND_COLUMNS = [("PenteParDecennie", 4), ("IC95_Bas", 4), ("IC95_Haut", 4), ("P
 NATIONAL = "CANADA"  # ProvinceID NULL dans les tables d'anomalies et de tendances
 
 
+@dataclass(frozen=True)
+class AnomalyDomain:
+    name: str
+    database: str
+    folder: str  # sous-dossier de Data/Processed
+    anomaly_table: str
+    trend_table: str
+    unit: str
+
+
+ANOMALY_DOMAINS = {
+    "temperature": AnomalyDomain("temperature", "TemperatureDB", "Temperature",
+                                 "TemperatureAnomalie", "TemperatureTendance", "°C"),
+    "precipitation": AnomalyDomain("precipitation", "PrecipitationDB", "Precipitation",
+                                   "PrecipitationAnomalie", "PrecipitationTendance", "% de la normale"),
+}
+
+
 def sql_number(value, decimals):
     return "NULL" if pd.isna(value) else f"{float(value):.{decimals}f}"
 
@@ -114,18 +132,18 @@ def lookup(province, year):
     return "p.ProvinceID", f"FROM Province p, Annee a WHERE p.CodeProvince = '{province}' AND a.ValeurAnnee = {int(year)}"
 
 
-def build_anomaly_sql(annual, trends, years=YEARS):
-    """Script SQL des tables TemperatureAnomalie et TemperatureTendance (rechargées à chaque exécution)."""
+def build_anomaly_sql(annual, trends, years=YEARS, domain=ANOMALY_DOMAINS["temperature"]):
+    """Script SQL des tables d'anomalies et de tendances (rechargées à chaque exécution)."""
     lines = [
-        "USE TemperatureDB;",
+        f"USE {domain.database};",
         "GO",
         "",
-        f"-- Anomalies de température par station et tendances, période {min(years)}-{max(years)}",
+        f"-- Anomalies par station et tendances ({domain.name}), période {min(years)}-{max(years)}, unité : {domain.unit}",
         "-- Fichier généré par ETL/generate_sql.py à partir de ETL/station_anomalies.py, ne pas modifier à la main.",
         "-- ProvinceID NULL = Canada (moyenne des provinces à poids égaux).",
         "",
-        "DELETE FROM TemperatureTendance;",
-        "DELETE FROM TemperatureAnomalie;",
+        f"DELETE FROM {domain.trend_table};",
+        f"DELETE FROM {domain.anomaly_table};",
         "",
     ]
 
@@ -134,7 +152,7 @@ def build_anomaly_sql(annual, trends, years=YEARS):
         province_sql, source = lookup(row["Province"], row["Annee"])
         values = ", ".join(sql_number(row[csv_name], decimals) for _, csv_name, decimals in ANOMALY_COLUMNS)
         lines.append(
-            f"INSERT INTO TemperatureAnomalie ({columns}) "
+            f"INSERT INTO {domain.anomaly_table} ({columns}) "
             f"SELECT {province_sql}, a.AnneeID, {values} {source};"
         )
 
@@ -148,7 +166,7 @@ def build_anomaly_sql(annual, trends, years=YEARS):
             province_sql, source = "p.ProvinceID", f"FROM Province p WHERE p.CodeProvince = '{province}'"
         values = ", ".join(sql_number(row[name], decimals) for name, decimals in TREND_COLUMNS)
         lines.append(
-            f"INSERT INTO TemperatureTendance ({columns}) "
+            f"INSERT INTO {domain.trend_table} ({columns}) "
             f"SELECT {province_sql}, '{row['Methode']}', {values}, {int(row['NbAnnees'])} {source};"
         )
 
@@ -156,17 +174,17 @@ def build_anomaly_sql(annual, trends, years=YEARS):
         "GO",
         "",
         "-- Vérification",
-        "SELECT COUNT(*) AS NombreAnomalies FROM TemperatureAnomalie;",
-        "SELECT COUNT(*) AS NombreTendances FROM TemperatureTendance;",
+        f"SELECT COUNT(*) AS NombreAnomalies FROM {domain.anomaly_table};",
+        f"SELECT COUNT(*) AS NombreTendances FROM {domain.trend_table};",
     ]
     return "\n".join(lines) + "\n"
 
 
-def generate_anomalies():
-    annual = pd.read_csv(PROCESSED_DIR / "Temperature" / "temperature_anomaly_annual.csv")
-    trends = pd.read_csv(PROCESSED_DIR / "Temperature" / "temperature_trends.csv")
-    output = DATABASE_DIR / "TemperatureDB" / "03_insert_temperature_anomalies.sql"
-    output.write_text(build_anomaly_sql(annual, trends), encoding="utf-8")
+def generate_anomalies(domain):
+    annual = pd.read_csv(PROCESSED_DIR / domain.folder / f"{domain.name}_anomaly_annual.csv")
+    trends = pd.read_csv(PROCESSED_DIR / domain.folder / f"{domain.name}_trends.csv")
+    output = DATABASE_DIR / domain.database / f"03_insert_{domain.name}_anomalies.sql"
+    output.write_text(build_anomaly_sql(annual, trends, domain=domain), encoding="utf-8")
     print(f"{output.relative_to(DATABASE_DIR.parent)} : {len(annual)} anomalies, {len(trends)} tendances")
 
 
@@ -174,7 +192,8 @@ def main():
     names = sys.argv[1:] or [*DOMAINS, "anomalies"]
     for name in names:
         if name == "anomalies":
-            generate_anomalies()
+            for domain in ANOMALY_DOMAINS.values():
+                generate_anomalies(domain)
         else:
             generate(name)
 
