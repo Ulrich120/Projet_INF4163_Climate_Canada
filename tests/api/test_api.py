@@ -108,3 +108,23 @@ def test_precipitation_anomaly_endpoints_turn_errors_into_500(monkeypatch, path)
 
     monkeypatch.setattr(main, "execute_query", boom)
     assert client.get(path).status_code == 500
+
+
+def test_connection_string_uses_windows_authentication_by_default(monkeypatch):
+    from app import database
+
+    monkeypatch.delenv("SQL_USER", raising=False)
+    connection_string = database.build_connection_string("TemperatureDB")
+    assert "DATABASE=TemperatureDB;" in connection_string
+    assert "Trusted_Connection=yes;" in connection_string
+    assert "UID=" not in connection_string
+
+
+def test_connection_string_uses_sql_authentication_when_a_user_is_set(monkeypatch):
+    from app import database
+
+    monkeypatch.setenv("SQL_USER", "sa")
+    monkeypatch.setenv("SQL_PASSWORD", "Secret123!")
+    connection_string = database.build_connection_string("PollutionDB")
+    assert "UID=sa;PWD=Secret123!;" in connection_string
+    assert "Trusted_Connection" not in connection_string

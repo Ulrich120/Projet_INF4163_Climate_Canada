@@ -15,15 +15,26 @@ DATABASES = {
 }
 
 
-def get_connection(database_name: str):
-    connection_string = (
+def build_connection_string(database_name: str) -> str:
+    # authentification SQL (conteneur Docker, Linux) si SQL_USER est défini,
+    # sinon authentification Windows (SQL Server Express local)
+    user = os.getenv("SQL_USER")
+    if user:
+        credentials = f"UID={user};PWD={os.getenv('SQL_PASSWORD', '')};"
+    else:
+        credentials = "Trusted_Connection=yes;"
+
+    return (
         f"DRIVER={{{DRIVER}}};"
         f"SERVER={SERVER};"
         f"DATABASE={database_name};"
-        "Trusted_Connection=yes;"
+        f"{credentials}"
         "TrustServerCertificate=yes;"
     )
-    return pyodbc.connect(connection_string, timeout=10)
+
+
+def get_connection(database_name: str):
+    return pyodbc.connect(build_connection_string(database_name), timeout=10)
 
 
 def test_database(database_name: str):
