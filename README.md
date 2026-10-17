@@ -118,6 +118,7 @@ Projet_INF4163/
 ├── Data/                 données brutes (GES) et agrégats annuels (CSV)
 ├── Database/             création des bases, données, procédures, déclencheurs, vues, setup.ps1
 ├── tests/                tests pytest (ETL et API)
+├── docker/ + docker-compose.yml   démarrage complet en une commande
 ├── ETL/                  scripts Python du pipeline
 ├── PowerBI/              guide de connexion et mesures DAX
 ├── Website/
@@ -127,7 +128,23 @@ Projet_INF4163/
 └── Presentation/         support de présentation
 ```
 
-## Installation et exécution locale
+## Essayer le projet en une commande (Docker)
+
+Pas besoin d'installer SQL Server : un Docker Compose lance la base (SQL Server dans un conteneur), l'API et l'interface.
+
+```bash
+cp .env.example .env          # voir la note sur les licences ci-dessous
+docker compose up --build
+```
+
+Puis ouvrir **http://localhost:8080**. Le premier démarrage télécharge les images (SQL Server fait environ 1,5 Go) et crée les trois bases à partir de `Database/` ; les suivants sont immédiats, les données restant dans un volume Docker. `docker compose down` arrête tout (ajouter `-v` pour effacer aussi les données).
+
+- **Licences Microsoft.** `.env.example` contient `ACCEPT_EULA=Y` : en copiant ce fichier en `.env`, tu acceptes le [contrat de licence de SQL Server](https://go.microsoft.com/fwlink/?linkid=857698) (édition Express) et celui du pilote ODBC installé dans l'image de l'API. Sans cette variable, `docker compose` refuse de démarrer.
+- **Mot de passe.** `MSSQL_SA_PASSWORD` est une valeur de démonstration. Le port de la base n'est ouvert que sur ta machine (`127.0.0.1:14333`, par exemple pour SSMS ou Power BI) et ne l'est pas du tout vers l'extérieur.
+- **Ports.** `WEB_PORT` et `DB_PORT` dans `.env` changent les ports 8080 et 14333 si besoin.
+- **Vérification.** La CI GitHub lance ce même Compose à chaque push et vérifie que l'application répond avec les données.
+
+## Installation et exécution locale (sans Docker)
 
 ### Prérequis
 
