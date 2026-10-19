@@ -33,7 +33,7 @@ Le travail a consisté à construire une chaîne de traitement allant des fichie
 
 L'application permet de sélectionner une province ou un territoire, de consulter les graphiques et la carte, puis de comparer les résultats entre différentes périodes. Des pages de résultats présentent également les analyses réalisées par les procédures stockées.
 
-La version initiale remise dans le cadre du cours, limitée à la période 2023–2025, est conservée sous le tag `v1-remise-inf4163`.
+Le projet a initialement porté sur les données climatiques de 2023 à 2025, avant d'être étendu à la période 2000–2025 pour approfondir les analyses et développer une application web de consultation.
 
 ## 2. Architecture et choix techniques
 
@@ -319,23 +319,48 @@ pytest
 
 Les tests vérifient notamment le nettoyage et l'agrégation des données, ainsi que les routes de l'API. Certains tests utilisent une base simulée, ce qui évite d'avoir besoin de SQL Server pour les lancer. GitHub Actions exécute aussi des contrôles de qualité du code et une compilation du frontend à chaque push.
 
-## 12. Répartition du travail
+## 12. Équipe et contributions
 
-Projet réalisé en équipe de trois dans le cadre du cours INF4163 à l'UQO :
+Ce projet a été réalisé dans le cadre du cours **INF4163 — Techniques de bases de données**, à l'Université du Québec en Outaouais, en équipe de trois étudiants.
 
 | Membre | Contribution principale |
 |---|---|
-| **Dongmo Ulrich** | Conception et développement : ETL, bases de données, procédures stockées, backend FastAPI, frontend React et intégration Power BI |
-| **Domingo Christophe Jules Ifede Vignon** | Rapport et documentation |
-| **Diagne El Hadj Talla** | Présentation et support visuel |
+| **Ulrich Dongmo** | Conception et développement de la solution : pipeline ETL Python, bases SQL Server, procédures stockées et déclencheurs, API FastAPI, interface React, intégration Power BI et déploiement |
+| **Domingo Christophe Jules Ifede Vignon** | Rédaction du rapport universitaire et documentation |
+| **Diagne El Hadj Talla** | Préparation de la présentation et des supports visuels |
+
+### Ma contribution technique
+
+J'ai assuré le développement et l'intégration des principales composantes de l'application, depuis la préparation des données climatiques jusqu'à leur consultation dans une interface web.
+
+Ce travail comprend notamment :
+
+- **Ingénierie des données :** extraction, nettoyage, transformation et agrégation des données avec Python et pandas.
+- **Bases de données :** organisation des données dans SQL Server, développement de scripts T-SQL, de procédures stockées et de déclencheurs.
+- **Développement backend :** création d'une API REST avec FastAPI et connexion aux bases de données.
+- **Développement frontend :** réalisation de l'interface React et intégration des graphiques et filtres interactifs.
+- **Analyse et visualisation :** intégration de Power BI et exploitation des résultats statistiques.
+- **Intégration et déploiement :** configuration Docker, déploiement sur Render et Vercel, et mise en place de vérifications automatisées.
+
+Le projet combine ainsi plusieurs domaines de l'informatique : ingénierie des données, développement logiciel, bases de données et visualisation analytique.
+
+### Documentation et outils d'assistance
+
+La rédaction du rapport universitaire et la préparation des supports de présentation ont été réparties entre les membres de l'équipe, conformément aux responsabilités indiquées ci-dessus.
+
+Des outils d'intelligence artificielle générative ont également été utilisés comme assistance ponctuelle à la programmation, à la structuration ou à la reformulation de contenus. Leur utilisation ne constitue pas une contribution humaine indépendante. Les membres de l'équipe restent responsables de leurs travaux respectifs et de leur validation.
 
 ## 13. Bilan personnel
 
-Ce projet m'a permis de mieux comprendre ce qu'implique la réalisation d'une application centrée sur les données. Au-delà des requêtes SQL, j'ai dû relier plusieurs outils, organiser les traitements, gérer les problèmes de qualité des fichiers et vérifier que les résultats affichés correspondaient réellement aux données analysées.
+Ce projet représente une expérience importante de ma formation en génie informatique. Il m'a permis de passer d'exercices isolés en programmation et en bases de données à la conception d'une application intégrant plusieurs technologies.
 
-La partie la plus formatrice a été la comparaison entre les agrégations simples et les analyses par station. Elle m'a montré qu'un traitement techniquement correct ne suffit pas : il faut aussi s'assurer que la méthode utilisée permet de répondre à la question posée.
+L'un des principaux défis a été de construire une chaîne de traitement cohérente, depuis les fichiers climatiques bruts jusqu'aux résultats consultables dans l'application web.
 
-J'ai également pu approfondir mes compétences en Python, SQL Server, développement d'API, React, tests automatisés et déploiement. Ce sont des compétences que je souhaite continuer à développer dans mes prochains projets en génie informatique et en analyse de données.
+J'ai également constaté qu'une analyse statistique dépend fortement de la qualité et de la représentativité des données. La comparaison des moyennes simples et des anomalies calculées par station m'a particulièrement sensibilisé aux limites méthodologiques des analyses climatiques.
+
+Sur le plan technique, j'ai renforcé mes compétences en **Python, SQL Server, T-SQL, FastAPI, React, Power BI, Docker et déploiement web**.
+
+Ce projet constitue aujourd'hui une réalisation concrète que je peux présenter dans mon portfolio pour illustrer mes compétences en développement logiciel, en ingénierie des données et en intégration de systèmes.
 
 ## 14. Sources et limites
 
