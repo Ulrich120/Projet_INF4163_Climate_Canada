@@ -55,7 +55,7 @@ jobs:
           curl -fsS http://localhost:8080/api/temperature/trends | python3 -c "import json,sys; rows=json.load(sys.stdin); assert len(rows) == 42, len(rows); print(len(rows), 'tendances de température')"
           curl -fsS http://localhost:8080/api/precipitation/anomalies | python3 -c "import json,sys; rows=json.load(sys.stdin); assert len(rows) == 364, len(rows); print(len(rows), 'anomalies de précipitations')"
           curl -fsS http://localhost:8080/temperature | grep -q '<div id="root">'
-      - name: Image de la démo en ligne (Render) : mêmes réponses que SQL Server
+      - name: "Image de la démo en ligne (Render) : mêmes réponses que SQL Server"
         run: |
           docker build -f deploy/render/Dockerfile -t demo .
           docker run -d --name demo -p 8001:10000 -e PORT=10000 demo
