@@ -1,5 +1,7 @@
 # Analyse des données climatiques du Canada — INF4163
 
+[![CI](https://github.com/Ulrich120/Projet_INF4163_Climate_Canada/actions/workflows/ci.yml/badge.svg)](https://github.com/Ulrich120/Projet_INF4163_Climate_Canada/actions/workflows/ci.yml)
+
 **Projet de session — Techniques de bases de données | Université du Québec en Outaouais (2026)**
 
 Dans le cadre du cours INF4163, notre équipe a développé une application permettant de consulter et d'analyser des données climatiques canadiennes. Nous avons travaillé sur trois thèmes : les températures, les précipitations et les émissions de gaz à effet de serre (GES).
@@ -9,6 +11,12 @@ Au départ, le projet portait surtout sur l'extraction et l'organisation des don
 **[Consulter la démonstration en ligne](https://projet-inf-4163-climate-canada.vercel.app)**
 
 > La démonstration utilise une API hébergée sur l'offre gratuite de Render. Après une période d'inactivité, son premier chargement peut prendre environ une minute. Les données de cette version sont accessibles en lecture seule.
+
+| Températures | Précipitations |
+|---|---|
+| ![Page Températures](docs/screenshots/temperatures.png) | ![Page Précipitations](docs/screenshots/precipitations.png) |
+
+![Page Pollution](docs/screenshots/pollution.png)
 
 ## 1. Présentation du projet
 
@@ -94,6 +102,8 @@ Le nombre de stations actives passe d'environ **1 780 en 2000 à 1 000 en 2025**
 
 Par exemple, au Québec, une moyenne simple suggère une baisse de **0,74 °C par décennie**, tandis qu'une analyse fondée sur les anomalies propres à chaque station indique une hausse de **0,44 °C par décennie**.
 
+![Températures : moyenne simple contre anomalies par station](docs/figures/tendances_temperature.png)
+
 En comparant les observations de chaque station à sa propre référence (`ETL/station_anomalies.py`), nous obtenons, pour les 13 provinces et territoires, des tendances comprises entre **+0,12 et +0,62 °C par décennie**. À l'échelle du Canada, en donnant le même poids à chaque province ou territoire, l'estimation est de **+0,35 °C par décennie**, avec un intervalle de confiance à 95 % de **+0,04 à +0,67 °C**.
 
 Ces résultats doivent être interprétés avec prudence : sur les 13 provinces et territoires, seuls cinq présentent un intervalle de confiance qui exclut zéro.
@@ -104,9 +114,13 @@ Le même problème se retrouve dans l'analyse des précipitations. La somme des 
 
 Nous avons aussi observé un changement de qualité des données autour de 2008 : la proportion de relevés comportant plus de cinq jours manquants passe d'environ **4 % à 17 %**. Ces relevés sont exclus de l'analyse des tendances. Aucune tendance de précipitations n'est calculée pour le Yukon, faute de station de longue durée répondant aux critères retenus.
 
+![Précipitations : cumul simple contre anomalies par station](docs/figures/tendances_precipitations.png)
+
 ### Émissions de GES
 
 L'analyse sectorielle montre une diminution d'environ **10 %** des émissions nationales depuis 2005, de **763,0 à 684,7 Mt CO₂e**. Environ **85 %** de cette diminution provient du secteur de l'électricité. Hors électricité, la baisse est de **1,9 %**, tandis que les émissions du pétrole et du gaz augmentent de **5 %**.
+
+![Émissions nationales par secteur](docs/figures/ges_secteurs.png)
 
 Ces résultats nous ont appris qu'une tendance statistique dépend fortement de la méthode de calcul et de la couverture des données. Il est donc important de présenter les incertitudes et de documenter les limites plutôt que de s'arrêter à un chiffre ou à un graphique.
 
