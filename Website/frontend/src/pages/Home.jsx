@@ -11,6 +11,7 @@ import {
 import { Line } from "react-chartjs-2";
 
 import api from "../api/api";
+import ErrorNotice from "../components/ErrorNotice";
 import LoadingNotice from "../components/LoadingNotice";
 import useDataBackend from "../hooks/useDataBackend";
 import CanadaMap from "../components/map/CanadaMap";
@@ -159,7 +160,7 @@ function Home() {
         </div>
       </section>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <ErrorNotice message={error} />}
 
       <div className="row g-4 mb-4">
         <div className="col-md-6 col-xl-3">

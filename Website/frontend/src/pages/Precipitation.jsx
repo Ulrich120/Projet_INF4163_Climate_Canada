@@ -14,6 +14,7 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import ErrorNotice from "../components/ErrorNotice";
 import LoadingNotice from "../components/LoadingNotice";
 import {
   lastWithData,
@@ -252,6 +253,7 @@ function Precipitation() {
           <select
             className="form-select dashboard-select"
             value={selectedProvince}
+            disabled={provinces.length === 0}
             onChange={(event) => setSelectedProvince(event.target.value)}
           >
             {provinces.map((province) => (
@@ -263,7 +265,7 @@ function Precipitation() {
         </div>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <ErrorNotice message={error} />}
 
       <div className="alert alert-info border-0 shadow-sm">
         <i className="bi bi-info-circle-fill me-2"></i>
@@ -272,7 +274,7 @@ function Precipitation() {
         pas comparable dans le temps (courbe rouge pointillée). Une anomalie
         compare chaque station à sa propre normale, en pourcentage, et c'est
         elle qui sert à calculer la tendance. Les relevés auxquels il manque
-        plus de 5 jours sont écartés. Sur {years.length} ans, une tendance dont
+        plus de 5 jours sont écartés. {years.length ? `Sur ${years.length} ans, une` : "Une"} tendance dont
         l'intervalle de confiance à 95 % contient zéro est non concluante.
       </div>
 

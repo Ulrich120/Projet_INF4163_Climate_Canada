@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/api";
+import ErrorNotice from "../components/ErrorNotice";
 import LoadingNotice from "../components/LoadingNotice";
 import { signed } from "../utils/series";
 
@@ -99,7 +100,7 @@ function Results() {
         </p>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <ErrorNotice message={error} />}
 
       <div className="alert alert-warning border-0 shadow-sm">
         <i className="bi bi-exclamation-triangle-fill me-2"></i>

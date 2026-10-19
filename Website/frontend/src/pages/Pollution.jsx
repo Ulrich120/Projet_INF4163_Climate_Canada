@@ -13,6 +13,7 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import ErrorNotice from "../components/ErrorNotice";
 import LoadingNotice from "../components/LoadingNotice";
 import {
   firstWithData,
@@ -216,6 +217,7 @@ function Pollution() {
           <select
             className="form-select dashboard-select"
             value={selectedProvince}
+            disabled={provinces.length === 0}
             onChange={(event) => setSelectedProvince(event.target.value)}
           >
             {provinces.map((province) => (
@@ -227,7 +229,7 @@ function Pollution() {
         </div>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <ErrorNotice message={error} />}
 
       {hasUnpublishedYears && (
         <div className="alert alert-warning shadow-sm border-0">
