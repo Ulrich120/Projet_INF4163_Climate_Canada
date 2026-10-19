@@ -111,7 +111,11 @@ Même constat pour les précipitations, en plus net : la somme simple des statio
 
 Les pages Températures et Précipitations de l'interface affichent ces anomalies et ces tendances, avec leur intervalle de confiance, plutôt que la moyenne simple. Le Yukon n'a pas de station de longue durée pour les précipitations : aucune tendance n'est calculée.
 
-La méthode est validée sur un réseau synthétique dont on connaît la bonne réponse (tests dans `tests/etl/`). Méthode complète et limites : [`Data/README.md`](Data/README.md).
+Côté émissions de GES, le total national baisse de 10 % depuis 2005 (763,0 → 684,7 Mt CO₂e), mais **85 % de cette baisse vient du seul secteur de l'électricité** : sans lui, les émissions ne reculent que de 1,9 %, et le pétrole et le gaz progressent de 5 %.
+
+![Émissions nationales par secteur](docs/figures/ges_secteurs.png)
+
+La méthode est validée sur un réseau synthétique dont on connaît la bonne réponse (tests dans `tests/etl/`). Méthode complète et limites : [`Data/README.md`](Data/README.md). La lecture complète des résultats, avec ce qu'ils permettent et ne permettent pas d'affirmer, est dans [`docs/analyse.md`](docs/analyse.md).
 
 ## Power BI
 
@@ -214,6 +218,7 @@ python ETL/aggregate_pollution.py
 python ETL/build_station_table.py            # ~3 min, produit Data/Interim/stations_monthly.csv.gz
 python ETL/station_anomalies.py              # anomalies et tendances (température et précipitations) -> Data/Processed/
 python ETL/plot_trends.py                    # figure -> docs/figures/
+python ETL/analyze_ges.py                    # GES par secteur -> docs/figures/ges_secteurs.png
 python ETL/generate_sql.py                   # réécrit Database/*/02_insert_*.sql et les 03_insert_*_anomalies.sql
 ```
 
