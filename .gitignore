@@ -49,3 +49,5 @@ Data/Interim/
 
 # Bases SQLite du mode démonstration (regénérées par ETL/build_demo_db.py)
 Data/Demo/
+
+.claude/
