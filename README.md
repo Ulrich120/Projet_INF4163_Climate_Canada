@@ -6,6 +6,23 @@ Projet réalisé pour le cours **INF4163 — Techniques de bases de données** �
 
 Le but n'était pas juste de "faire joli" avec des graphiques, mais de manipuler un vrai pipeline de données : aller chercher les fichiers bruts, les nettoyer, les charger dans SQL Server, écrire des procédures stockées pour en tirer des analyses, puis exposer tout ça via une API et un frontend.
 
+## En bref
+
+**Les données.** 4 056 fichiers mensuels d'Environnement et Changement climatique Canada (13 provinces et territoires, 2000-2025), soit 434 723 relevés de 3 175 stations, chargés dans SQL Server, servis par une API et affichés dans une interface React (et dans Power BI).
+
+**Ce que j'en retire** (la partie qui m'a le plus appris) :
+
+- **La moyenne des stations ment.** Le réseau passe d'environ 1 780 stations actives en 2000 à environ 1 000 en 2025. La moyenne simple fait « refroidir » le Québec (−0,74 °C par décennie) alors que, station par station, il se réchauffe (+0,44).
+- **Pire pour les précipitations.** La somme simple affiche une baisse nationale « significative » (−38 mm par décennie). Par stations, il n'y a rien de détectable : −0,9 % par décennie, intervalle de −4,4 à +2,5.
+- **Une rupture de qualité en 2008.** La part de relevés auxquels il manque plus de 5 jours de mesure passe de 4 % à 17 %.
+- **Les résultats portent leur incertitude.** Canada : +0,35 °C par décennie, intervalle de confiance à 95 % de 0,04 à 0,67. Sur 13 provinces, seules 5 ont une tendance dont l'intervalle exclut zéro.
+
+La méthode est validée sur des réseaux synthétiques dont on connaît la bonne réponse, et ses limites sont écrites dans [`Data/README.md`](Data/README.md).
+
+| Températures | Précipitations |
+|---|---|
+| ![Page Températures](docs/screenshots/temperatures.png) | ![Page Précipitations](docs/screenshots/precipitations.png) |
+
 ## Ce que ça fait
 
 L'application permet d'explorer, province par province, l'évolution de trois choses entre 2000 et 2025 :
@@ -109,6 +126,9 @@ En plus du dashboard React, `PowerBI/` explique comment brancher un rapport Powe
 | React + Vite | Interface web |
 | Chart.js | Graphiques |
 | Power BI Desktop | Tableau de bord analytique |
+| Docker Compose | SQL Server, API et interface en une commande |
+| SQLite | Mode démonstration en ligne (lecture seule) |
+| Render, Vercel | Hébergement de la démo (API, interface) |
 | Bootstrap | Mise en page rapide du frontend |
 
 ## Structure du dépôt
@@ -119,6 +139,7 @@ Projet_INF4163/
 ├── Database/             création des bases, données, procédures, déclencheurs, vues, setup.ps1
 ├── tests/                tests pytest (ETL et API)
 ├── docker/ + docker-compose.yml   démarrage complet en une commande
+├── deploy/ + render.yaml          démo en ligne (image Render, comparaison SQL Server / SQLite)
 ├── ETL/                  scripts Python du pipeline
 ├── PowerBI/              guide de connexion et mesures DAX
 ├── Website/
@@ -143,6 +164,17 @@ Puis ouvrir **http://localhost:8080**. Le premier démarrage télécharge les im
 - **Mot de passe.** `MSSQL_SA_PASSWORD` est une valeur de démonstration. Le port de la base n'est ouvert que sur ta machine (`127.0.0.1:14333`, par exemple pour SSMS ou Power BI) et ne l'est pas du tout vers l'extérieur.
 - **Ports.** `WEB_PORT` et `DB_PORT` dans `.env` changent les ports 8080 et 14333 si besoin.
 - **Vérification.** La CI GitHub lance ce même Compose à chaque push et vérifie que l'application répond avec les données.
+
+## Déployer en ligne (Render + Vercel)
+
+L'interface se déploie sur **Vercel** et l'API sur **Render**. SQL Server, lui, ne s'héberge pas gratuitement : Render n'en propose pas (seulement Postgres, dont l'offre gratuite expire au bout de 30 jours) et son image demande au moins 2 Go de mémoire. La démo en ligne tourne donc en **mode démonstration** : l'API lit trois petites bases SQLite en lecture seule, construites par `ETL/build_demo_db.py` à partir des mêmes CSV. L'interface l'indique (« Démo en ligne : données SQLite en lecture seule »), et la CI vérifie à chaque push que les 10 routes de l'API renvoient exactement les mêmes réponses que la version SQL Server (`deploy/compare_backends.py`).
+
+1. **API sur Render.** Dans [le tableau de bord Render](https://dashboard.render.com) : *New* → *Blueprint* → choisir ce dépôt. Render lit `render.yaml` (service Docker, offre gratuite) et demande `CORS_ORIGINS` : mettre l'adresse Vercel si tu la connais déjà, sinon une valeur provisoire. Une fois déployé, ouvrir `https://<ton-service>.onrender.com/api/health` : la réponse doit contenir `"donnees":"sqlite"`.
+2. **Interface sur Vercel.** *Add New* → *Project* → importer le dépôt, avec **Root Directory** `Website/frontend` (Vite est détecté tout seul) et la variable d'environnement `VITE_API_URL` = l'adresse Render, sans `/` final. `vercel.json` s'occupe de la navigation entre pages.
+3. **Retour sur Render.** Dans *Environment*, régler `CORS_ORIGINS` sur l'adresse Vercel (par exemple `https://climate-canada.vercel.app`) : l'API n'accepte que les origines listées. `CORS_ORIGIN_REGEX` (facultative) autorise aussi les adresses de prévisualisation Vercel.
+4. **Vérifier**, puis ajouter l'adresse de la démo en haut de ce README.
+
+**Ce qu'il faut savoir.** Sur l'offre gratuite de Render, le service s'endort après 15 minutes sans visite et met environ une minute à se réveiller : l'interface l'explique pendant l'attente. Chaque workspace dispose de 750 heures gratuites par mois, soit à peu près un service éveillé en permanence. Pour garder SQL Server en ligne, il faudrait un hébergement payant ou Azure SQL Database ; je ne l'ai pas mis en place.
 
 ## Installation et exécution locale (sans Docker)
 
