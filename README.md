@@ -6,6 +6,8 @@ Projet réalisé pour le cours **INF4163 — Techniques de bases de données** �
 
 Le but n'était pas juste de "faire joli" avec des graphiques, mais de manipuler un vrai pipeline de données : aller chercher les fichiers bruts, les nettoyer, les charger dans SQL Server, écrire des procédures stockées pour en tirer des analyses, puis exposer tout ça via une API et un frontend.
 
+**Démo en ligne : [projet-inf-4163-climate-canada.vercel.app](https://projet-inf-4163-climate-canada.vercel.app)** (interface sur Vercel, API sur Render, données en lecture seule). L'API est sur l'offre gratuite de Render : elle se met en veille après quelques minutes d'inactivité, donc la première page peut mettre environ une minute à répondre.
+
 ## En bref
 
 **Les données.** 4 056 fichiers mensuels d'Environnement et Changement climatique Canada (13 provinces et territoires, 2000-2025), soit 434 723 relevés de 3 175 stations, chargés dans SQL Server, servis par une API et affichés dans une interface React (et dans Power BI).
