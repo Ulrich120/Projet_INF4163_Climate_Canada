@@ -25,6 +25,8 @@ La méthode est validée sur des réseaux synthétiques dont on connaît la bonn
 |---|---|
 | ![Page Températures](docs/screenshots/temperatures.png) | ![Page Précipitations](docs/screenshots/precipitations.png) |
 
+![Page Pollution (démo en ligne)](docs/screenshots/pollution.png)
+
 ## Ce que ça fait
 
 L'application permet d'explorer, province par province, l'évolution de trois choses entre 2000 et 2025 :
