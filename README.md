@@ -1,82 +1,65 @@
-# Climate Canada Dashboard
+# Analyse des données climatiques du Canada — INF4163
 
-[![CI](https://github.com/Ulrich120/Projet_INF4163_Climate_Canada/actions/workflows/ci.yml/badge.svg)](https://github.com/Ulrich120/Projet_INF4163_Climate_Canada/actions/workflows/ci.yml)
+**Projet de session — Techniques de bases de données | Université du Québec en Outaouais (2026)**
 
-Projet réalisé pour le cours **INF4163 — Techniques de bases de données** à l'UQO. L'idée de départ : prendre des données climatiques publiques du Canada (température, précipitations, émissions de GES) et construire une petite application complète autour — base de données, API, interface web, et maintenant un tableau de bord Power BI.
+Dans le cadre du cours INF4163, notre équipe a développé une application permettant de consulter et d'analyser des données climatiques canadiennes. Nous avons travaillé sur trois thèmes : les températures, les précipitations et les émissions de gaz à effet de serre (GES).
 
-Le but n'était pas juste de "faire joli" avec des graphiques, mais de manipuler un vrai pipeline de données : aller chercher les fichiers bruts, les nettoyer, les charger dans SQL Server, écrire des procédures stockées pour en tirer des analyses, puis exposer tout ça via une API et un frontend.
+Au départ, le projet portait surtout sur l'extraction et l'organisation des données dans SQL Server. Nous l'avons ensuite fait évoluer vers une application web complète, avec une API, une interface de visualisation et un volet d'analyse dans Power BI. Cela nous a permis de mettre en pratique plusieurs notions du cours, tout en abordant des questions concrètes de qualité et d'interprétation des données.
 
-**Démo en ligne : [projet-inf-4163-climate-canada.vercel.app](https://projet-inf-4163-climate-canada.vercel.app)** (interface sur Vercel, API sur Render, données en lecture seule). L'API est sur l'offre gratuite de Render : elle se met en veille après quelques minutes d'inactivité, donc la première page peut mettre environ une minute à répondre.
+**[Consulter la démonstration en ligne](https://projet-inf-4163-climate-canada.vercel.app)**
 
-## En bref
+> La démonstration utilise une API hébergée sur l'offre gratuite de Render. Après une période d'inactivité, son premier chargement peut prendre environ une minute. Les données de cette version sont accessibles en lecture seule.
 
-**Les données.** 4 056 fichiers mensuels d'Environnement et Changement climatique Canada (13 provinces et territoires, 2000-2025), soit 434 723 relevés de 3 175 stations, chargés dans SQL Server, servis par une API et affichés dans une interface React (et dans Power BI).
+## 1. Présentation du projet
 
-**Ce que j'en retire** (la partie qui m'a le plus appris) :
+Nous avons exploité **4 056 fichiers mensuels** provenant d'Environnement et Changement climatique Canada (ECCC), couvrant les **13 provinces et territoires**, de **2000 à 2025**. Le jeu de données traité représente **434 723 relevés provenant de 3 175 stations**.
 
-- **La moyenne des stations ment.** Le réseau passe d'environ 1 780 stations actives en 2000 à environ 1 000 en 2025. La moyenne simple fait « refroidir » le Québec (−0,74 °C par décennie) alors que, station par station, il se réchauffe (+0,44).
-- **Pire pour les précipitations.** La somme simple affiche une baisse nationale « significative » (−38 mm par décennie). Par stations, il n'y a rien de détectable : −0,9 % par décennie, intervalle de −4,4 à +2,5.
-- **Une rupture de qualité en 2008.** La part de relevés auxquels il manque plus de 5 jours de mesure passe de 4 % à 17 %.
-- **Les résultats portent leur incertitude.** Canada : +0,35 °C par décennie, intervalle de confiance à 95 % de 0,04 à 0,67. Sur 13 provinces, seules 5 ont une tendance dont l'intervalle exclut zéro.
+Le travail a consisté à construire une chaîne de traitement allant des fichiers sources jusqu'à leur consultation dans une interface web :
 
-La méthode est validée sur des réseaux synthétiques dont on connaît la bonne réponse, et ses limites sont écrites dans [`Data/README.md`](Data/README.md).
+1. Collecter et préparer les fichiers climatiques.
+2. Nettoyer et agréger les observations avec Python.
+3. Organiser les résultats dans des bases SQL Server.
+4. Développer des procédures stockées et des déclencheurs.
+5. Exposer les données au moyen d'une API FastAPI.
+6. Afficher les résultats avec React et proposer une analyse complémentaire dans Power BI.
 
-| Températures | Précipitations |
+L'application permet de sélectionner une province ou un territoire, de consulter les graphiques et la carte, puis de comparer les résultats entre différentes périodes. Des pages de résultats présentent également les analyses réalisées par les procédures stockées.
+
+La version initiale remise dans le cadre du cours, limitée à la période 2023–2025, est conservée sous le tag `v1-remise-inf4163`.
+
+## 2. Architecture et choix techniques
+
+```text
+Fichiers climatiques ECCC
+          |
+          v
+     ETL Python
+          |
+          v
+ SQL Server (3 bases)
+          |
+          v
+   API FastAPI
+          |
+          v
+ Interface React
+
+Power BI : analyse complémentaire à partir des bases SQL Server
+```
+
+Nous avons choisi de séparer le traitement des données, le stockage et l'affichage. Le frontend n'accède donc pas directement à SQL Server : les requêtes passent par l'API, qui utilise `pyodbc` pour communiquer avec la base de données.
+
+### Organisation des bases de données
+
+| Base | Contenu |
 |---|---|
-| ![Page Températures](docs/screenshots/temperatures.png) | ![Page Précipitations](docs/screenshots/precipitations.png) |
+| `TemperatureDB` | Températures mensuelles et agrégations annuelles par province ou territoire |
+| `PrecipitationDB` | Précipitations mensuelles et cumuls annuels |
+| `PollutionDB` | Émissions de GES en Mt CO₂e |
 
-![Page Pollution (démo en ligne)](docs/screenshots/pollution.png)
+La séparation en trois bases nous a permis de traiter chaque domaine indépendamment et de mieux structurer les scripts SQL. Des **procédures stockées** permettent d'identifier les années et les provinces présentant les valeurs les plus élevées ou les plus faibles. Des **déclencheurs** vérifient certaines valeurs lors des insertions, notamment les températures hors de la plage −100 à 70 °C, les précipitations négatives et les émissions négatives.
 
-## Ce que ça fait
-
-L'application permet d'explorer, province par province, l'évolution de trois choses entre 2000 et 2025 :
-
-- la **température** moyenne annuelle,
-- les **précipitations** cumulées,
-- les **émissions de GES** (en Mt CO₂e).
-
-Pour chaque thème, il y a des graphiques, une carte du Canada, et une page "résultats" qui affiche ce que sortent nos procédures stockées (année/province la plus chaude, la plus pluvieuse, etc.).
-
-> Petite note honnête sur les données : les chiffres officiels de GES par province pour 2025 ne sont pas encore publiés. Ces cellules restent à `NULL` plutôt que d'être extrapolées. Même logique pour la température et les précipitations : une année n'est calculée que si les 12 mois sont disponibles, sinon la valeur reste vide (voir [`Data/README.md`](Data/README.md) pour la méthode et ses limites).
-
-*La version d'origine du projet (2023-2025, telle que remise pour le cours) est conservée sur le tag `v1-remise-inf4163`.*
-
-## Architecture
-
-Rien de très exotique, c'est le classique base de données → API → frontend :
-
-```
-Data brutes (ECCC)
-      │
-      ▼
-   ETL (Python)
-      │
-      ▼
- SQL Server (3 bases : TemperatureDB, PrecipitationDB, PollutionDB)
-      │
-      ▼
-  FastAPI (backend)
-      │
-      ▼
-   React (frontend)
-      │
-      ▼
-   Power BI (analyse / tableau de bord)
-```
-
-Le frontend ne touche jamais directement aux données : tout passe par l'API, qui elle-même interroge SQL Server via pyodbc.
-
-## Les trois bases de données
-
-On a choisi de séparer les trois thèmes en bases distinctes plutôt que de tout mettre dans une seule — plus proche de ce qu'on ferait si chaque domaine (météo, environnement) était géré par une équipe différente.
-
-**TemperatureDB** — température moyenne par province/territoire et par mois, avec l'agrégation annuelle correspondante.
-
-**PrecipitationDB** — précipitations cumulées, même logique de granularité mensuelle → annuelle.
-
-**PollutionDB** — émissions de GES en Mt CO₂e, avec les années non publiées à `NULL` pour les raisons expliquées plus haut.
-
-Chaque base a ses propres procédures stockées (`Database/Procedures/`) pour sortir l'année/la province la plus ou la moins extrême, et des déclencheurs (`Database/Triggers/`) qui bloquent l'insertion de valeurs aberrantes (température hors de -100/70 °C, précipitation négative, émission négative).
+Exemples de procédures utilisées, à exécuter dans la base correspondante :
 
 ```sql
 EXEC dbo.sp_AnneePlusMoinsChaude;
@@ -89,144 +72,161 @@ EXEC dbo.sp_AnneePlusMoinsPolluee;
 EXEC dbo.sp_ProvincePlusMoinsPolluee;
 ```
 
-## Le pipeline ETL
+Les scripts sont regroupés dans `Database/Procedures/` et `Database/Triggers/`.
 
-Les scripts dans `ETL/` suivent à peu près ce chemin pour chaque thème : télécharger les fichiers sources, les nettoyer (encodages inconsistants, virgules décimales à la française), calculer les agrégats mensuels puis annuels, valider que rien ne manque, et enfin générer les scripts SQL d'insertion.
+## 3. Collecte et traitement des données (ETL)
 
-C'est volontairement découpé en petits scripts plutôt qu'un seul gros programme — plus facile à relancer un morceau seul quand une source change de format en cours de route (ce qui est arrivé plus d'une fois avec les fichiers d'Environnement Canada).
+Les scripts du dossier `ETL/` suivent les étapes classiques d'un processus **Extract, Transform, Load** : extraction des fichiers sources, nettoyage et transformation, puis préparation de leur chargement dans SQL Server.
 
-## Ce que montrent les données
+Nous avons notamment dû gérer des différences d'encodage, les virgules décimales et les données manquantes. Les observations sont ensuite regroupées à l'échelle mensuelle ou annuelle, selon les indicateurs. Les scripts SQL d'insertion sont générés à partir des données préparées.
 
-Premier constat, avant tout résultat climatique : **la moyenne simple des stations ne permet pas de mesurer une tendance**. Le réseau d'ECCC passe d'environ 1 780 stations actives en 2000 à environ 1 000 en 2025, si bien que la moyenne annuelle du Québec « refroidit » de 0,74 °C par décennie alors que le même réseau, suivi station par station, se réchauffe.
+Nous avons préféré répartir ce travail dans plusieurs scripts Python plutôt que de tout réunir dans un seul fichier. Cette organisation facilite les vérifications et permet de relancer uniquement une étape lorsqu'un traitement échoue ou qu'un format de fichier change.
 
-![Moyenne simple contre anomalies par station](docs/figures/tendances_temperature.png)
+**Point important :** une valeur annuelle n'est calculée que si les douze mois nécessaires sont disponibles. Sinon, elle reste absente. Les valeurs provinciales de GES non publiées pour 2025 sont conservées à `NULL`, sans extrapolation. Les règles de traitement et leurs limites sont détaillées dans `Data/README.md`.
 
-En comparant chaque station à sa propre moyenne (`ETL/station_anomalies.py`) :
+## 4. Résultats et enseignements
 
-- les 13 provinces et territoires se réchauffent, de +0,12 à +0,62 °C par décennie ;
-- pour le Canada (provinces à poids égaux) : **+0,35 °C par décennie, intervalle de confiance à 95 % de 0,04 à 0,67** ;
-- l'incertitude reste large : sur 26 ans, seules 5 provinces sur 13 ont un intervalle qui exclut zéro.
+L'une des principales difficultés rencontrées n'était pas la création des graphiques, mais la manière de comparer des observations issues d'un réseau de stations qui change au fil du temps.
 
-Même constat pour les précipitations, en plus net : la somme simple des stations actives affiche une baisse nationale « significative » (−38 mm par décennie, de 792 mm en 2000 à 618 mm en 2025), alors que par stations **il n'y a aucune tendance détectable** (−0,9 % de la normale par décennie, intervalle de −4,4 à +2,5). Les relevés avec plus de 5 jours manquants sont écartés, leur part passant de 4 % à 17 % en 2008.
+### Températures
 
-![Précipitations : cumul simple contre anomalies par station](docs/figures/tendances_precipitations.png)
+Le nombre de stations actives passe d'environ **1 780 en 2000 à 1 000 en 2025**. Cette évolution peut fausser une moyenne calculée directement à partir de toutes les stations disponibles chaque année.
 
-Les pages Températures et Précipitations de l'interface affichent ces anomalies et ces tendances, avec leur intervalle de confiance, plutôt que la moyenne simple. Le Yukon n'a pas de station de longue durée pour les précipitations : aucune tendance n'est calculée.
+Par exemple, au Québec, une moyenne simple suggère une baisse de **0,74 °C par décennie**, tandis qu'une analyse fondée sur les anomalies propres à chaque station indique une hausse de **0,44 °C par décennie**.
 
-Côté émissions de GES, le total national baisse de 10 % depuis 2005 (763,0 → 684,7 Mt CO₂e), mais **85 % de cette baisse vient du seul secteur de l'électricité** : sans lui, les émissions ne reculent que de 1,9 %, et le pétrole et le gaz progressent de 5 %.
+En comparant les observations de chaque station à sa propre référence (`ETL/station_anomalies.py`), nous obtenons, pour les 13 provinces et territoires, des tendances comprises entre **+0,12 et +0,62 °C par décennie**. À l'échelle du Canada, en donnant le même poids à chaque province ou territoire, l'estimation est de **+0,35 °C par décennie**, avec un intervalle de confiance à 95 % de **+0,04 à +0,67 °C**.
 
-![Émissions nationales par secteur](docs/figures/ges_secteurs.png)
+Ces résultats doivent être interprétés avec prudence : sur les 13 provinces et territoires, seuls cinq présentent un intervalle de confiance qui exclut zéro.
 
-La méthode est validée sur un réseau synthétique dont on connaît la bonne réponse (tests dans `tests/etl/`). Méthode complète et limites : [`Data/README.md`](Data/README.md). La lecture complète des résultats, avec ce qu'ils permettent et ne permettent pas d'affirmer, est dans [`docs/analyse.md`](docs/analyse.md).
+### Précipitations
 
-## Power BI
+Le même problème se retrouve dans l'analyse des précipitations. La somme des relevés des stations actives suggère une baisse nationale de **38 mm par décennie** (de 792 mm en 2000 à 618 mm en 2025). L'analyse par anomalies de stations donne plutôt **−0,9 % de la normale par décennie**, avec un intervalle allant de **−4,4 % à +2,5 %**. Cette dernière estimation ne permet pas de conclure à une tendance nette.
 
-En plus du dashboard React, `PowerBI/` explique comment brancher un rapport Power BI directement sur les trois bases SQL Server, pour une analyse plus libre que ce que permet l'interface web (croisements, filtres dynamiques, export). Voir [`PowerBI/README.md`](PowerBI/README.md) pour la marche à suivre — en résumé, Power BI Desktop se connecte en direct aux bases via le même driver ODBC que le backend.
+Nous avons aussi observé un changement de qualité des données autour de 2008 : la proportion de relevés comportant plus de cinq jours manquants passe d'environ **4 % à 17 %**. Ces relevés sont exclus de l'analyse des tendances. Aucune tendance de précipitations n'est calculée pour le Yukon, faute de station de longue durée répondant aux critères retenus.
 
-## Stack technique
+### Émissions de GES
 
-| Techno | Rôle |
+L'analyse sectorielle montre une diminution d'environ **10 %** des émissions nationales depuis 2005, de **763,0 à 684,7 Mt CO₂e**. Environ **85 %** de cette diminution provient du secteur de l'électricité. Hors électricité, la baisse est de **1,9 %**, tandis que les émissions du pétrole et du gaz augmentent de **5 %**.
+
+Ces résultats nous ont appris qu'une tendance statistique dépend fortement de la méthode de calcul et de la couverture des données. Il est donc important de présenter les incertitudes et de documenter les limites plutôt que de s'arrêter à un chiffre ou à un graphique.
+
+La méthode a été testée sur des réseaux synthétiques dont les tendances sont connues (`tests/etl/`). Les analyses détaillées figurent dans `docs/analyse.md` et les précautions méthodologiques dans `Data/README.md`.
+
+## 5. Interface web et Power BI
+
+L'interface React présente des pages consacrées aux températures, aux précipitations et à la pollution. Elle permet d'explorer les données à l'aide de graphiques, de cartes et de filtres. Les tendances de température et de précipitations y sont présentées avec leurs intervalles de confiance.
+
+Power BI constitue un complément à cette interface. Il permet d'effectuer des comparaisons plus libres, d'appliquer des filtres et de construire des tableaux de bord analytiques à partir des bases SQL Server. Le dossier `PowerBI/README.md` explique comment établir la connexion et utiliser les mesures DAX proposées.
+
+## 6. Technologies utilisées
+
+| Technologie | Utilisation dans le projet |
 |---|---|
-| SQL Server / T-SQL | Stockage, procédures stockées, déclencheurs |
-| Python + pandas | ETL (extraction, nettoyage, agrégation) |
-| pyodbc | Connexion Python ↔ SQL Server |
-| FastAPI + Uvicorn | API REST |
-| React + Vite | Interface web |
-| Chart.js | Graphiques |
-| Power BI Desktop | Tableau de bord analytique |
-| Docker Compose | SQL Server, API et interface en une commande |
-| SQLite | Mode démonstration en ligne (lecture seule) |
-| Render, Vercel | Hébergement de la démo (API, interface) |
-| Bootstrap | Mise en page rapide du frontend |
+| Python, pandas | Extraction, nettoyage et agrégation des données |
+| SQL Server, T-SQL | Stockage, procédures stockées et déclencheurs |
+| pyodbc | Connexion de Python à SQL Server |
+| FastAPI, Uvicorn | Développement et exécution de l'API REST |
+| React, Vite, Bootstrap | Interface web |
+| Chart.js | Graphiques interactifs |
+| Power BI Desktop | Analyse et tableaux de bord |
+| Docker Compose | Démarrage de l'environnement complet |
+| SQLite | Données de démonstration en lecture seule |
+| Render, Vercel | Hébergement de l'API et du frontend |
+| pytest, Ruff, GitHub Actions | Tests et contrôles automatisés |
 
-## Structure du dépôt
+## 7. Organisation du dépôt
 
-```
+```text
 Projet_INF4163/
-├── Data/                 données brutes (GES) et agrégats annuels (CSV)
-├── Database/             création des bases, données, procédures, déclencheurs, vues, setup.ps1
-├── tests/                tests pytest (ETL et API)
-├── docker/ + docker-compose.yml   démarrage complet en une commande
-├── deploy/ + render.yaml          démo en ligne (image Render, comparaison SQL Server / SQLite)
-├── ETL/                  scripts Python du pipeline
-├── PowerBI/              guide de connexion et mesures DAX
+├── Data/                 Données et agrégations
+├── Database/             Scripts SQL, procédures, déclencheurs, vues et setup.ps1
+├── ETL/                  Scripts de collecte et de transformation
+├── PowerBI/              Guide Power BI et mesures DAX
 ├── Website/
 │   ├── backend/          API FastAPI
-│   └── frontend/         application React
-├── Rapport/              rapport et annexes du cours
-└── Presentation/         support de présentation
+│   └── frontend/         Application React
+├── tests/                Tests ETL et API
+├── docker/               Configuration des conteneurs
+├── docker-compose.yml
+├── deploy/               Scripts de déploiement et comparaison des backends
+├── render.yaml
+├── Rapport/              Rapport et annexes du cours
+└── Presentation/         Présentation du projet
 ```
 
-## Essayer le projet en une commande (Docker)
+## 8. Exécuter le projet avec Docker
 
-Pas besoin d'installer SQL Server : un Docker Compose lance la base (SQL Server dans un conteneur), l'API et l'interface.
+Pour faciliter la prise en main, nous avons prévu une configuration Docker Compose qui démarre SQL Server, l'API et l'interface sans avoir à installer chaque service séparément.
 
-```bash
-cp .env.example .env          # voir la note sur les licences ci-dessous
+À la racine du dépôt :
+
+```powershell
+Copy-Item .env.example .env
+
 docker compose up --build
 ```
 
-Puis ouvrir **http://localhost:8080**. Le premier démarrage télécharge les images (SQL Server fait environ 1,5 Go) et crée les trois bases à partir de `Database/` ; les suivants sont immédiats, les données restant dans un volume Docker. `docker compose down` arrête tout (ajouter `-v` pour effacer aussi les données).
+Ouvrir ensuite **http://localhost:8080**.
 
-- **Licences Microsoft.** `.env.example` contient `ACCEPT_EULA=Y` : en copiant ce fichier en `.env`, tu acceptes le [contrat de licence de SQL Server](https://go.microsoft.com/fwlink/?linkid=857698) (édition Express) et celui du pilote ODBC installé dans l'image de l'API. Sans cette variable, `docker compose` refuse de démarrer.
-- **Mot de passe.** `MSSQL_SA_PASSWORD` est une valeur de démonstration. Le port de la base n'est ouvert que sur ta machine (`127.0.0.1:14333`, par exemple pour SSMS ou Power BI) et ne l'est pas du tout vers l'extérieur.
-- **Ports.** `WEB_PORT` et `DB_PORT` dans `.env` changent les ports 8080 et 14333 si besoin.
-- **Vérification.** La CI GitHub lance ce même Compose à chaque push et vérifie que l'application répond avec les données.
+Le premier lancement télécharge les images nécessaires, dont celle de SQL Server (environ 1,5 Go), puis initialise les trois bases. Les données sont conservées dans un volume Docker entre les démarrages.
 
-## Déployer en ligne (Render + Vercel)
+```powershell
+docker compose down       # Arrêter les services
+docker compose down -v    # Arrêter et supprimer aussi les volumes de données
+```
 
-L'interface se déploie sur **Vercel** et l'API sur **Render**. SQL Server, lui, ne s'héberge pas gratuitement : Render n'en propose pas (seulement Postgres, dont l'offre gratuite expire au bout de 30 jours) et son image demande au moins 2 Go de mémoire. La démo en ligne tourne donc en **mode démonstration** : l'API lit trois petites bases SQLite en lecture seule, construites par `ETL/build_demo_db.py` à partir des mêmes CSV. L'interface l'indique (« Démo en ligne : données SQLite en lecture seule »), et la CI vérifie à chaque push que les 10 routes de l'API renvoient exactement les mêmes réponses que la version SQL Server (`deploy/compare_backends.py`).
+**Configuration :** le fichier `.env.example` contient `ACCEPT_EULA=Y`, qui indique l'acceptation des licences Microsoft associées à SQL Server Express et au pilote ODBC. Il contient également un mot de passe de démonstration (`MSSQL_SA_PASSWORD`) à remplacer pour tout usage réel. Le port SQL Server est exposé uniquement sur l'ordinateur local (`127.0.0.1`, port 14333 par défaut). Les ports peuvent être adaptés avec `WEB_PORT` et `DB_PORT`.
 
-1. **API sur Render.** Dans [le tableau de bord Render](https://dashboard.render.com) : *New* → *Blueprint* → choisir ce dépôt. Render lit `render.yaml` (service Docker, offre gratuite) et demande `CORS_ORIGINS` : mettre l'adresse Vercel si tu la connais déjà, sinon une valeur provisoire. Une fois déployé, ouvrir `https://<ton-service>.onrender.com/api/health` : la réponse doit contenir `"donnees":"sqlite"`.
-2. **Interface sur Vercel.** *Add New* → *Project* → importer le dépôt, avec **Root Directory** `Website/frontend` (Vite est détecté tout seul) et la variable d'environnement `VITE_API_URL` = l'adresse Render, sans `/` final. `vercel.json` s'occupe de la navigation entre pages.
-3. **Retour sur Render.** Dans *Environment*, régler `CORS_ORIGINS` sur l'adresse Vercel (par exemple `https://climate-canada.vercel.app`) : l'API n'accepte que les origines listées. `CORS_ORIGIN_REGEX` (facultative) autorise aussi les adresses de prévisualisation Vercel.
-4. **Vérifier**, puis ajouter l'adresse de la démo en haut de ce README.
+La configuration CI GitHub lance aussi Docker Compose et vérifie que l'application répond avec ses données.
 
-**Ce qu'il faut savoir.** Sur l'offre gratuite de Render, le service s'endort après 15 minutes sans visite et met environ une minute à se réveiller : l'interface l'explique pendant l'attente. Chaque workspace dispose de 750 heures gratuites par mois, soit à peu près un service éveillé en permanence. Pour garder SQL Server en ligne, il faudrait un hébergement payant ou Azure SQL Database ; je ne l'ai pas mis en place.
-
-## Installation et exécution locale (sans Docker)
+## 9. Installation locale sans Docker
 
 ### Prérequis
 
-Python 3, SQL Server (Express suffit), SQL Server Management Studio ou équivalent, ODBC Driver 17/18 for SQL Server, Node.js + npm, Git. Power BI Desktop si tu veux ouvrir le tableau de bord.
+- Python 3, Git, Node.js et npm
+- SQL Server (l'édition Express convient) et SSMS ou un autre client SQL
+- ODBC Driver 17 ou 18 for SQL Server
+- Power BI Desktop pour consulter ou développer les rapports
 
-### 1. Cloner
+### Récupérer le projet
 
-```bash
+```powershell
 git clone https://github.com/Ulrich120/Projet_INF4163_Climate_Canada.git
 cd Projet_INF4163_Climate_Canada
 ```
 
-### 2. Mettre en place SQL Server
-
-Un seul script crée les trois bases, charge les données et installe procédures, déclencheurs et vues :
+### Préparer les bases de données
 
 ```powershell
-.\Database\setup.ps1 -Server ".\SQLEXPRESS"          # ajoute -Reset pour repartir de zéro
+.\Database\setup.ps1 -Server ".\SQLEXPRESS"
 ```
 
-Le backend lit l'adresse du serveur dans un fichier `.env` : copie `Website/backend/.env.example` vers `Website/backend/.env` et mets le nom de ton instance (un `SELECT @@SERVERNAME;` dans SSMS te donne la bonne valeur).
+Le paramètre `-Reset` permet de repartir de zéro, mais **réinitialise les données**. Il ne faut donc l'utiliser que si cette opération est souhaitée.
 
-### 3. Régénérer les données (optionnel)
+Copier `Website/backend/.env.example` vers `Website/backend/.env`, puis y renseigner l'instance SQL Server. Au besoin, la requête `SELECT @@SERVERNAME;` dans SSMS permet de vérifier le nom du serveur.
 
-Les CSV annuels et les scripts SQL sont déjà versionnés. Pour tout recalculer depuis les sources ECCC (~4 000 petits fichiers, une heure environ) :
+### Relancer l'ETL (facultatif)
+
+Les fichiers annuels et les scripts d'insertion sont déjà inclus dans le dépôt. Pour reconstruire les résultats depuis les fichiers ECCC (environ 4 000 fichiers, durée indicative d'une heure) :
 
 ```powershell
-pip install -r ETL/requirements.txt
-python ETL/download_climate_summaries.py    # reprend là où il s'est arrêté si interrompu
+python -m pip install -r ETL/requirements.txt
+python ETL/download_climate_summaries.py
 python ETL/aggregate_temperature.py
 python ETL/aggregate_precipitation.py
 python ETL/aggregate_pollution.py
-python ETL/build_station_table.py            # ~3 min, produit Data/Interim/stations_monthly.csv.gz
-python ETL/station_anomalies.py              # anomalies et tendances (température et précipitations) -> Data/Processed/
-python ETL/plot_trends.py                    # figure -> docs/figures/
-python ETL/analyze_ges.py                    # GES par secteur -> docs/figures/ges_secteurs.png
-python ETL/generate_sql.py                   # réécrit Database/*/02_insert_*.sql et les 03_insert_*_anomalies.sql
+python ETL/build_station_table.py
+python ETL/station_anomalies.py
+python ETL/plot_trends.py
+python ETL/analyze_ges.py
+python ETL/generate_sql.py
 ```
 
-La période se règle dans `ETL/config.py` (`START_YEAR`, `END_YEAR`).
+Le script de téléchargement peut reprendre après une interruption. La table intermédiaire des stations est enregistrée dans `Data/Interim/stations_monthly.csv.gz`; les résultats d'anomalies sont produits dans `Data/Processed/` et certaines figures dans `docs/figures/`. La période étudiée est définie par `START_YEAR` et `END_YEAR` dans `ETL/config.py`.
 
-### 4. Lancer le backend
+### Démarrer le backend
+
+Depuis la racine du projet, dans PowerShell :
 
 ```powershell
 python -m venv .venv3
@@ -236,11 +236,11 @@ cd Website\backend
 python -m uvicorn app.main:app --reload
 ```
 
-L'API tourne sur `http://127.0.0.1:8000` (doc interactive sur `/docs`).
+L'API est accessible à **http://127.0.0.1:8000** et sa documentation interactive à **http://127.0.0.1:8000/docs**.
 
-### 5. Lancer le frontend
+### Démarrer le frontend
 
-Dans un autre terminal :
+Dans un second terminal, depuis la racine du dépôt :
 
 ```powershell
 cd Website\frontend
@@ -248,47 +248,85 @@ npm install
 npm run dev
 ```
 
-Vite indique l'adresse locale, en général `http://localhost:5173`.
+Vite affiche l'adresse de l'interface, généralement **http://localhost:5173**. L'API doit également être en cours d'exécution pour que les données puissent être chargées.
 
-Le backend doit être démarré avant (ou pendant) l'utilisation du frontend — sans lui, les pages restent vides.
+### Utiliser le mode démonstration sans SQL Server
 
-### Variante sans SQL Server : le mode démonstration
-
-Pour tester l'interface sans SQL Server ni Docker, l'API peut lire les bases SQLite de démonstration :
+Depuis la racine du dépôt, générer les bases SQLite :
 
 ```powershell
-python ETL/build_demo_db.py                      # une fois : crée Data/Demo/*.sqlite
-cd Website/backend
-$env:DATA_BACKEND = "sqlite"; $env:DEMO_DB_DIR = "../../Data/Demo"
+python ETL/build_demo_db.py
+cd Website\backend
+$env:DATA_BACKEND = "sqlite"
+$env:DEMO_DB_DIR = "../../Data/Demo"
 python -m uvicorn app.main:app --reload
 ```
 
-Puis lancer le frontend comme ci-dessus. Le libellé en bas à gauche de l'interface indique le mode (« SQL Server » ou « Mode démonstration »).
+Lancer ensuite le frontend comme indiqué plus haut. L'interface précise si elle utilise SQL Server ou le mode démonstration.
 
-### Si une page affiche « Impossible de charger »
+### En cas de problème de chargement
 
-C'est que l'API ne répond pas : menu des provinces vide, graphiques vides, photo de l'équipe absente en développement. Vérifier dans l'ordre que le backend tourne (`http://127.0.0.1:8000/api/health` doit répondre), que le serveur du frontend (`npm run dev`) tourne aussi, et que `VITE_API_URL` pointe vers la bonne adresse si tu l'as définie. Le bouton « Réessayer » recharge la page une fois le serveur relancé.
+Si l'interface affiche « Impossible de charger », vérifier d'abord que **http://127.0.0.1:8000/api/health** répond, puis que le serveur Vite fonctionne. Vérifier également la variable `VITE_API_URL` si elle a été définie. Une fois le problème corrigé, le bouton « Réessayer » permet de recharger les données.
 
-### 6. Tests et qualité du code
+## 10. Déploiement de la démonstration
+
+Pour rendre le projet consultable sans installer SQL Server, nous avons déployé le frontend sur **Vercel** et l'API sur **Render**. La version publique utilise trois bases SQLite en lecture seule, construites à partir des mêmes CSV par `ETL/build_demo_db.py`.
+
+Ce choix vient surtout des contraintes de l'hébergement gratuit : une instance SQL Server demande davantage de ressources et n'est pas proposée dans cette configuration. La version locale conserve SQL Server comme base principale.
+
+### Déployer l'API sur Render
+
+1. Dans Render, choisir **New → Blueprint** et sélectionner le dépôt.
+2. Le fichier `render.yaml` définit le service Docker.
+3. Renseigner `CORS_ORIGINS` avec l'adresse du frontend Vercel, ou une valeur provisoire à corriger ensuite.
+4. Tester l'URL `https://<nom-du-service>.onrender.com/api/health`. La réponse doit indiquer `"donnees":"sqlite"`.
+
+### Déployer le frontend sur Vercel
+
+1. Choisir **Add New → Project** et importer le dépôt.
+2. Définir `Website/frontend` comme **Root Directory**.
+3. Définir `VITE_API_URL` avec l'adresse Render, sans barre oblique finale.
+4. Déployer. Le fichier `vercel.json` gère la navigation entre les pages.
+5. Retourner sur Render pour mettre `CORS_ORIGINS` à jour avec l'adresse Vercel définitive. `CORS_ORIGIN_REGEX` peut aussi autoriser les URL de prévisualisation.
+
+L'offre gratuite de Render met le service en veille après environ quinze minutes sans activité. La première requête peut donc être plus lente. Une solution SQL Server hébergée en permanence demanderait une configuration payante, qui n'a pas été mise en place dans ce projet.
+
+Le script `deploy/compare_backends.py` compare les réponses des **dix routes API** entre SQL Server et SQLite; cette vérification est également intégrée à la CI.
+
+## 11. Tests et vérifications
+
+Depuis la racine du dépôt :
 
 ```powershell
-pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt
 ruff check .
 pytest
 ```
 
-Les tests couvrent la logique de nettoyage/agrégation de l'ETL et les routes de l'API (base de données simulée, pas besoin de SQL Server). La même vérification tourne sur GitHub Actions à chaque push, avec un lint + build du frontend.
+Les tests vérifient notamment le nettoyage et l'agrégation des données, ainsi que les routes de l'API. Certains tests utilisent une base simulée, ce qui évite d'avoir besoin de SQL Server pour les lancer. GitHub Actions exécute aussi des contrôles de qualité du code et une compilation du frontend à chaque push.
 
-## Équipe
+## 12. Répartition du travail
 
-Projet réalisé à trois pour le cours INF4163 (UQO, 2026) :
+Projet réalisé en équipe de trois dans le cadre du cours INF4163 à l'UQO :
 
-- **Dongmo Ulrich** — conception et développement (ETL, bases de données, procédures stockées, backend FastAPI, frontend React, intégration Power BI)
-- **Domingo Christophe Jules Ifede Vignon** — rapport et documentation
-- **Diagne El Hadj Talla** — présentation et support visuel
+| Membre | Contribution principale |
+|---|---|
+| **Dongmo Ulrich** | Conception et développement : ETL, bases de données, procédures stockées, backend FastAPI, frontend React et intégration Power BI |
+| **Domingo Christophe Jules Ifede Vignon** | Rapport et documentation |
+| **Diagne El Hadj Talla** | Présentation et support visuel |
 
-## Sources et limites
+## 13. Bilan personnel
 
-Les données proviennent d'Environnement et Changement climatique Canada. Elles ont été retravaillées (nettoyage, agrégation, recodage des provinces) pour les besoins du projet — ce ne sont pas les fichiers officiels tels quels. Comme mentionné plus haut, certaines valeurs 2025 ne sont pas encore disponibles côté GES et apparaissent volontairement comme `NULL` plutôt que comme une estimation.
+Ce projet m'a permis de mieux comprendre ce qu'implique la réalisation d'une application centrée sur les données. Au-delà des requêtes SQL, j'ai dû relier plusieurs outils, organiser les traitements, gérer les problèmes de qualité des fichiers et vérifier que les résultats affichés correspondaient réellement aux données analysées.
 
-Projet universitaire, données externes soumises aux conditions d'utilisation de leurs fournisseurs respectifs.
+La partie la plus formatrice a été la comparaison entre les agrégations simples et les analyses par station. Elle m'a montré qu'un traitement techniquement correct ne suffit pas : il faut aussi s'assurer que la méthode utilisée permet de répondre à la question posée.
+
+J'ai également pu approfondir mes compétences en Python, SQL Server, développement d'API, React, tests automatisés et déploiement. Ce sont des compétences que je souhaite continuer à développer dans mes prochains projets en génie informatique et en analyse de données.
+
+## 14. Sources et limites
+
+Les données utilisées proviennent d'**Environnement et Changement climatique Canada**. Elles ont été nettoyées, regroupées et transformées pour les besoins de notre application : les fichiers produits ne doivent donc pas être confondus avec les fichiers officiels d'origine.
+
+Certaines observations sont incomplètes, le réseau de stations varie au fil des années et les émissions provinciales de GES pour 2025 ne sont pas encore publiées. Ces limites influencent l'interprétation des résultats et sont détaillées dans `Data/README.md` et `docs/analyse.md`.
+
+Ce dépôt est un projet universitaire. Les données externes restent soumises aux conditions d'utilisation de leurs fournisseurs respectifs.
