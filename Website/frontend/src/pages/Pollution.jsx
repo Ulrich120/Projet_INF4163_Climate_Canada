@@ -85,6 +85,11 @@ function Pollution() {
     return published.length ? Math.max(...published.map((item) => item.annee)) : null;
   }, [data]);
   const hasUnpublishedYears = lastOfficialYear !== null && lastOfficialYear < maxYear;
+  const unpublishedYears = years.filter((year) => lastOfficialYear !== null && year > lastOfficialYear);
+  const unpublishedLabel =
+    unpublishedYears.length > 1
+      ? `Années ${unpublishedYears[0]} à ${unpublishedYears[unpublishedYears.length - 1]}`
+      : `Année ${unpublishedYears[0]}`;
 
   const first = firstWithData(provinceData, "emission");
   const latest = lastWithData(provinceData, "emission");
@@ -234,9 +239,9 @@ function Pollution() {
       {hasUnpublishedYears && (
         <div className="alert alert-warning shadow-sm border-0">
           <i className="bi bi-info-circle-fill me-2"></i>
-          Les données officielles provinciales de GES après {lastOfficialYear} ne
-          sont pas encore disponibles. Elles sont affichées comme non
-          disponibles.
+          {unpublishedLabel} : ECCC n'a pas encore publié les émissions
+          provinciales de GES (dernière année publiée : {lastOfficialYear}).
+          Ces valeurs sont affichées comme non disponibles, jamais estimées.
         </div>
       )}
 
