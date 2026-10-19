@@ -126,7 +126,7 @@ function Pollution() {
     labels: annualAverages.map((item) => item.year),
     datasets: [
       {
-        label: "Émissions moyennes nationales",
+        label: "Émissions moyennes par province",
         data: annualAverages.map((item) => round2(item.average)),
         backgroundColor: "rgba(22,163,74,0.72)",
         borderRadius: 6,
@@ -365,7 +365,7 @@ function Pollution() {
               }}
             >
               <i className="bi bi-bar-chart me-2"></i>
-              Moyenne nationale par année
+              Émission moyenne par province, par année
             </div>
 
             <div className="p-4" style={{ height: "370px" }}>
@@ -396,7 +396,10 @@ function Pollution() {
                       {mostPollutedYear.Annee}
                     </div>
 
-                    <div>{mostPollutedYear.EmissionMoyenne_MtCO2e} Mt CO₂e</div>
+                    <div>
+                      {mostPollutedYear.EmissionMoyenne_MtCO2e} Mt CO₂e
+                      <span className="small text-muted"> par province</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -415,6 +418,7 @@ function Pollution() {
 
                     <div>
                       {leastPollutedYear.EmissionMoyenne_MtCO2e} Mt CO₂e
+                      <span className="small text-muted"> par province</span>
                     </div>
                   </div>
                 </div>
