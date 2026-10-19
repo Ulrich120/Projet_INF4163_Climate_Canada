@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/api";
+import LoadingNotice from "../components/LoadingNotice";
 import { signed } from "../utils/series";
 
 function Results() {
@@ -47,10 +48,7 @@ function Results() {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-success" />
-        <p className="mt-3">Exécution des procédures stockées...</p>
-      </div>
+      <LoadingNotice label="Exécution des procédures stockées..." color="text-success" />
     );
   }
 

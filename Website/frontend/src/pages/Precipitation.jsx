@@ -14,6 +14,7 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import LoadingNotice from "../components/LoadingNotice";
 import {
   lastWithData,
   mean,
@@ -225,10 +226,7 @@ function Precipitation() {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" />
-        <p className="mt-3">Chargement des précipitations...</p>
-      </div>
+      <LoadingNotice label="Chargement des précipitations..." color="text-primary" />
     );
   }
 

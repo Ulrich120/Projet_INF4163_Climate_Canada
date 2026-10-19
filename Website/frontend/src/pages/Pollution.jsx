@@ -13,6 +13,7 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 
 import api from "../api/api";
+import LoadingNotice from "../components/LoadingNotice";
 import {
   firstWithData,
   lastWithData,
@@ -189,10 +190,7 @@ function Pollution() {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-success" />
-        <p className="mt-3">Chargement des émissions...</p>
-      </div>
+      <LoadingNotice label="Chargement des émissions..." color="text-success" />
     );
   }
 

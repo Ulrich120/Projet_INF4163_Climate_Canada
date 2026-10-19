@@ -1,5 +1,7 @@
 import { NavLink } from "react-router-dom";
 
+import useDataBackend from "../../hooks/useDataBackend";
+
 const items = [
   { to: "/", icon: "bi-grid-1x2-fill", label: "Dashboard" },
   { to: "/temperature", icon: "bi-thermometer-high", label: "Température" },
@@ -10,6 +12,9 @@ const items = [
 ];
 
 function Sidebar() {
+  const backend = useDataBackend();
+  const demo = backend === "sqlite";
+
   return (
     <aside className="dashboard-sidebar">
       <div className="sidebar-brand">
@@ -43,8 +48,8 @@ function Sidebar() {
         <div className="sidebar-source">
           <i className="bi bi-database-fill-check"></i>
           <div>
-            <strong>SQL Server</strong>
-            <span>Données connectées</span>
+            <strong>{demo ? "Mode démonstration" : "SQL Server"}</strong>
+            <span>{demo ? "SQLite, lecture seule" : "Données connectées"}</span>
           </div>
         </div>
       </div>

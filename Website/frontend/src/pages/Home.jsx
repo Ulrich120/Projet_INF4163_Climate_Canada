@@ -11,6 +11,8 @@ import {
 import { Line } from "react-chartjs-2";
 
 import api from "../api/api";
+import LoadingNotice from "../components/LoadingNotice";
+import useDataBackend from "../hooks/useDataBackend";
 import CanadaMap from "../components/map/CanadaMap";
 import { lastWithData, signed, toNumber, trendLine, trendVerdict } from "../utils/series";
 
@@ -24,6 +26,7 @@ function Home() {
   const [selectedProvince, setSelectedProvince] = useState("QC");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const backend = useDataBackend();
 
   useEffect(() => {
     const loadData = async () => {
@@ -124,10 +127,7 @@ function Home() {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-success" />
-        <p className="mt-3">Chargement du tableau de bord...</p>
-      </div>
+      <LoadingNotice label="Chargement du tableau de bord..." color="text-success" />
     );
   }
 
@@ -138,7 +138,9 @@ function Home() {
           <div className="col-lg-8">
             <span className="badge text-bg-success mb-3">
               <i className="bi bi-database-check me-1"></i>
-              Données SQL Server en direct
+              {backend === "sqlite"
+                ? "Démo en ligne : données SQLite en lecture seule"
+                : "Données SQL Server en direct"}
             </span>
 
             <h1 className="display-5 fw-bold mb-3">Climate Canada Dashboard</h1>
