@@ -243,6 +243,23 @@ Vite indique l'adresse locale, en général `http://localhost:5173`.
 
 Le backend doit être démarré avant (ou pendant) l'utilisation du frontend — sans lui, les pages restent vides.
 
+### Variante sans SQL Server : le mode démonstration
+
+Pour tester l'interface sans SQL Server ni Docker, l'API peut lire les bases SQLite de démonstration :
+
+```powershell
+python ETL/build_demo_db.py                      # une fois : crée Data/Demo/*.sqlite
+cd Website/backend
+$env:DATA_BACKEND = "sqlite"; $env:DEMO_DB_DIR = "../../Data/Demo"
+python -m uvicorn app.main:app --reload
+```
+
+Puis lancer le frontend comme ci-dessus. Le libellé en bas à gauche de l'interface indique le mode (« SQL Server » ou « Mode démonstration »).
+
+### Si une page affiche « Impossible de charger »
+
+C'est que l'API ne répond pas : menu des provinces vide, graphiques vides, photo de l'équipe absente en développement. Vérifier dans l'ordre que le backend tourne (`http://127.0.0.1:8000/api/health` doit répondre), que le serveur du frontend (`npm run dev`) tourne aussi, et que `VITE_API_URL` pointe vers la bonne adresse si tu l'as définie. Le bouton « Réessayer » recharge la page une fois le serveur relancé.
+
 ### 6. Tests et qualité du code
 
 ```powershell
