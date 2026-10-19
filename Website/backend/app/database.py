@@ -1,9 +1,15 @@
 import os
+import sqlite3
+from pathlib import Path
 
-import pyodbc
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# "sqlserver" (par défaut) ou "sqlite" : le mode démonstration lit des bases SQLite en lecture seule
+# (voir ETL/build_demo_db.py), pour héberger gratuitement une démo sans SQL Server
+DATA_BACKEND = os.getenv("DATA_BACKEND", "sqlserver").lower()
+DEMO_DIR = Path(os.getenv("DEMO_DB_DIR", Path(__file__).resolve().parents[1] / "data"))
 
 SERVER = os.getenv("SQL_SERVER", r"localhost\SQLEXPRESS")
 DRIVER = os.getenv("SQL_DRIVER", "ODBC Driver 18 for SQL Server")
@@ -33,7 +39,24 @@ def build_connection_string(database_name: str) -> str:
     )
 
 
+def connect_demo(database_name: str):
+    path = (DEMO_DIR / f"{database_name}.sqlite").resolve()
+    if not path.exists():
+        raise FileNotFoundError(f"Base de démonstration introuvable : {path}")
+
+    # la base est attachée sous le nom "dbo" : les requêtes écrites pour SQL Server (dbo.Temperature,
+    # dbo.vw_...) fonctionnent telles quelles
+    connection = sqlite3.connect(":memory:", uri=True)
+    connection.execute("ATTACH DATABASE ? AS dbo", (f"{path.as_uri()}?mode=ro",))
+    return connection
+
+
 def get_connection(database_name: str):
+    if DATA_BACKEND == "sqlite":
+        return connect_demo(database_name)
+
+    import pyodbc  # importé ici : le mode démonstration n'a pas besoin du pilote ODBC
+
     return pyodbc.connect(build_connection_string(database_name), timeout=10)
 
 

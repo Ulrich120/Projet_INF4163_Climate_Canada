@@ -1,7 +1,10 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import get_connection
+from . import demo
+from .database import DATA_BACKEND, get_connection
 
 app = FastAPI(
     title="Climate Canada API",
@@ -9,14 +12,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# CORS_ORIGINS : adresses autorisées en plus de celles du développement local, séparées par des virgules
+# (ex. https://mon-projet.vercel.app) ; CORS_ORIGIN_REGEX pour les déploiements de prévisualisation
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    *[origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()],
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX") or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +52,9 @@ def execute_procedure(database_name, procedure_name):
     # d'où la boucle sur cursor.nextset()
     connection = get_connection(database_name)
     try:
+        if DATA_BACKEND == "sqlite":
+            return demo.run_procedure(connection, procedure_name)
+
         cursor = connection.cursor()
         cursor.execute(f"EXEC dbo.{procedure_name}")
 
@@ -65,7 +77,7 @@ def root():
 
 @app.get("/api/health")
 def health():
-    return {"status": "OK", "service": "Climate Canada API"}
+    return {"status": "OK", "service": "Climate Canada API", "donnees": DATA_BACKEND}
 
 
 # --- Température ---

@@ -46,3 +46,6 @@ Data/Raw/Temperature/
 
 # Tables intermédiaires régénérables (ETL/build_station_table.py)
 Data/Interim/
+
+# Bases SQLite du mode démonstration (regénérées par ETL/build_demo_db.py)
+Data/Demo/
