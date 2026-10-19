@@ -1,0 +1,20 @@
+# Contexte de build à la racine (deploy/render/Dockerfile) : on n'envoie que ce dont l'image a besoin
+.git
+.github
+.claude
+.venv*
+**/node_modules
+**/__pycache__
+.env
+.env.*
+Website/frontend
+Data/Raw
+Data/Interim
+Data/Demo
+Rapport
+Presentation
+Remise*
+Test_Remise*
+SQL_Server
+docs
+tests

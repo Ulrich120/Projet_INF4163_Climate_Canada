@@ -1,0 +1,15 @@
+# Blueprint Render : l'API de la démo en ligne (mode SQLite, offre gratuite).
+# Étapes complètes dans le README, section « Déployer en ligne ».
+
+services:
+  - type: web
+    name: climate-canada-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/render/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      # adresse de l'interface sur Vercel, ex. https://climate-canada.vercel.app (demandée à la création)
+      - key: CORS_ORIGINS
+        sync: false
